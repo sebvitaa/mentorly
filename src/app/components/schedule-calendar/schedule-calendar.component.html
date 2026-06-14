@@ -1,0 +1,69 @@
+<div class="calendar-container">
+  <button
+    type="button"
+    class="calendar-button"
+    [class.open]="isOpen"
+    [attr.aria-expanded]="isOpen"
+    (click)="toggle()"
+  >
+    <span>
+      @if (selectedTime && selectedDay) {
+        {{ formatFullDate(selectedDay.date) }} - {{ selectedTime }}
+      } @else {
+        Seleccionar fecha y hora
+      }
+    </span>
+    <span class="arrow" [class.open]="isOpen">▼</span>
+  </button>
+
+  @if (isOpen) {
+    <div class="dropdown">
+      <div class="calendar-grid">
+        @for (dateString of allDates; track dateString) {
+          @let day = dayFor(dateString);
+          <button
+            type="button"
+            class="day-button"
+            [disabled]="!day"
+            [attr.aria-label]="getDayName(dateString) + ' ' + getDayNumber(dateString)"
+            (click)="selectDay(day)"
+          >
+            <span class="day-label">{{ getDayName(dateString) }}</span>
+            <span class="day-number">{{ getDayNumber(dateString) }}</span>
+          </button>
+        }
+      </div>
+
+      @if (selectedDay) {
+        <div class="time-slots-container">
+          <h4 class="time-slots-header">
+            Horas disponibles - {{ formatFullDate(selectedDay.date) }}
+          </h4>
+          <div class="time-slots">
+            @for (slot of selectedDay.timeSlots; track slot.hour) {
+              @if (slot.available) {
+                <button
+                  type="button"
+                  class="time-slot-button"
+                  (click)="selectTime(slot.hour)"
+                >
+                  {{ slot.hour }}
+                </button>
+              }
+            }
+          </div>
+
+          @if (selectedTime) {
+            <div class="selected-time">
+              Seleccionado: {{ formatFullDate(selectedDay.date) }} a las
+              {{ selectedTime }}
+            </div>
+            <button type="button" class="confirm-button" (click)="confirm()">
+              Confirmar
+            </button>
+          }
+        </div>
+      }
+    </div>
+  }
+</div>

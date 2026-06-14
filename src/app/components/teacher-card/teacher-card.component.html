@@ -1,0 +1,30 @@
+<article
+  class="card"
+  role="button"
+  tabindex="0"
+  [attr.aria-label]="'Ver detalles de ' + teacher.name"
+  (click)="onActivate()"
+  (keydown)="onKeydown($event)"
+>
+  @if (teacher.avatar) {
+    <img class="avatar" [src]="teacher.avatar" [alt]="teacher.name" />
+  } @else {
+    <div class="initials">{{ getInitials(teacher.name) }}</div>
+  }
+
+  <h3 class="name">{{ teacher.name }}</h3>
+  <p class="career">{{ teacher.career }}</p>
+  <p class="price-range">{{ teacher.priceRange }}</p>
+
+  <div class="rating">
+    <span class="star">★</span>
+    <span class="rating-number">{{ teacher.rating.toFixed(1) }}</span>
+    <span class="review-count">({{ teacher.reviewCount }} reseñas)</span>
+  </div>
+
+  <div class="subjects">
+    @for (subject of teacher.subjects.slice(0, 3); track subject) {
+      <span class="subject">{{ subject }}</span>
+    }
+  </div>
+</article>

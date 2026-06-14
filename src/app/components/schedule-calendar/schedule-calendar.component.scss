@@ -1,0 +1,206 @@
+.calendar-container {
+  position: relative;
+}
+
+.calendar-button {
+  width: 100%;
+  font-family: var(--app-font);
+  font-weight: 600;
+  font-size: 16px;
+  padding: 14px 24px;
+  background: var(--brand-surface);
+  color: var(--brand-ink);
+  border: 2px solid var(--brand-ink);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  &:hover {
+    background: var(--brand-surface-alt);
+  }
+
+  &:focus {
+    outline: 2px solid var(--brand-primary);
+    outline-offset: 2px;
+  }
+
+  &.open {
+    border-radius: 6px 6px 0 0;
+    border-bottom-color: var(--brand-border);
+  }
+}
+
+.arrow {
+  transition: transform 150ms ease;
+
+  &.open {
+    transform: rotate(180deg);
+  }
+}
+
+.dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--brand-surface);
+  border: 2px solid var(--brand-ink);
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  z-index: 10;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+  padding: 16px;
+}
+
+.day-button {
+  font-family: var(--app-font);
+  font-weight: 500;
+  font-size: 13px;
+  padding: 10px 4px;
+  background: var(--brand-surface);
+  color: var(--brand-ink);
+  border: 1px solid var(--brand-ink);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 150ms ease;
+  text-align: center;
+
+  &:hover:not(:disabled) {
+    background: var(--brand-primary-tint);
+    border-color: var(--brand-primary);
+  }
+
+  &:focus {
+    outline: 2px solid var(--brand-primary);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    color: var(--brand-subtle);
+    border-color: var(--brand-border);
+    cursor: not-allowed;
+    background: var(--brand-surface-alt);
+  }
+}
+
+.day-label {
+  display: block;
+  font-size: 11px;
+  color: var(--brand-muted);
+  margin-bottom: 2px;
+}
+
+.day-number {
+  display: block;
+  font-weight: 600;
+}
+
+.time-slots-container {
+  padding: 16px;
+  border-top: 1px solid var(--brand-border);
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.time-slots-header {
+  font-family: var(--app-font);
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--brand-ink);
+  margin: 0 0 12px;
+}
+
+.time-slots {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.time-slot-button {
+  font-family: var(--app-font);
+  font-weight: 600;
+  font-size: 14px;
+  padding: 10px 16px;
+  background: var(--brand-surface);
+  color: var(--brand-primary);
+  border: 2px solid var(--brand-ink);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 150ms ease;
+  text-align: center;
+
+  &:hover {
+    background: var(--brand-primary-tint);
+  }
+
+  &:focus {
+    outline: 2px solid var(--brand-primary);
+    outline-offset: 2px;
+  }
+}
+
+.selected-time {
+  font-family: var(--app-font);
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--brand-ink);
+  margin-top: 12px;
+  padding: 12px;
+  background: var(--brand-primary-tint);
+  border-radius: 6px;
+  text-align: center;
+}
+
+.confirm-button {
+  width: 100%;
+  font-family: var(--app-font);
+  font-weight: 600;
+  font-size: 16px;
+  padding: 12px 24px;
+  background: var(--brand-primary);
+  color: #fff;
+  border: 2px solid var(--brand-ink);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+  margin-top: 12px;
+
+  &:hover {
+    background: var(--brand-primary-hover);
+  }
+
+  &:focus {
+    outline: 2px solid var(--brand-primary);
+    outline-offset: 2px;
+  }
+}
+
+@media (max-width: 768px) {
+  .calendar-grid {
+    gap: 6px;
+    padding: 12px;
+  }
+
+  .day-button {
+    padding: 8px 2px;
+    font-size: 12px;
+  }
+
+  .day-label {
+    font-size: 10px;
+  }
+
+  .time-slots {
+    grid-template-columns: 1fr;
+  }
+}

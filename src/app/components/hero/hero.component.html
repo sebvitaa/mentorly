@@ -1,0 +1,30 @@
+<section class="hero">
+  <h2 class="title">Encuentra tu profesor particular</h2>
+  <p class="subtitle">
+    Conecta con estudiantes UDD que dominan los ramos que necesitas
+  </p>
+
+  <form class="search-container" (submit)="onSubmit($event)">
+    <input
+      type="text"
+      class="search-input"
+      placeholder="Buscar por nombre, ramo o carrera…"
+      [(ngModel)]="searchQuery"
+      name="searchQuery"
+    />
+    <button type="submit" class="search-button">Buscar</button>
+  </form>
+
+  <div class="filters">
+    @for (filter of quickFilters; track filter) {
+      <button
+        type="button"
+        class="filter-chip"
+        [class.active]="activeFilter === filter"
+        (click)="onFilterClick(filter)"
+      >
+        {{ filter }}
+      </button>
+    }
+  </div>
+</section>

@@ -1,0 +1,113 @@
+.card {
+  border: 1.5px solid var(--brand-border);
+  border-radius: 10px;
+  padding: 20px;
+  background: var(--brand-surface);
+  cursor: pointer;
+  transition: border-color 150ms ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  height: 100%;
+
+  &:hover {
+    border-color: var(--brand-primary);
+  }
+
+  &:focus {
+    outline: 2px solid var(--brand-primary);
+    outline-offset: 2px;
+  }
+}
+
+.avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  margin-bottom: 12px;
+  object-fit: cover;
+}
+
+.initials {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: var(--brand-accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--app-font);
+  font-weight: 700;
+  font-size: 24px;
+  margin-bottom: 12px;
+}
+
+.name {
+  font-family: var(--app-font);
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--brand-ink);
+  margin: 0 0 4px;
+}
+
+.career {
+  font-family: var(--app-font);
+  font-weight: 400;
+  font-size: 13px;
+  color: var(--brand-muted);
+  margin: 0 0 8px;
+}
+
+.price-range {
+  font-family: var(--app-font);
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--brand-ink);
+  margin: 0 0 8px;
+}
+
+.rating {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.star {
+  color: var(--brand-primary);
+  font-size: 16px;
+}
+
+.rating-number {
+  font-family: var(--app-font);
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--brand-ink);
+}
+
+.review-count {
+  font-family: var(--app-font);
+  font-weight: 400;
+  font-size: 14px;
+  color: var(--brand-muted);
+}
+
+.subjects {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: auto;
+}
+
+.subject {
+  font-family: var(--app-font);
+  font-weight: 500;
+  font-size: 11px;
+  padding: 4px 8px;
+  background: var(--brand-surface-alt);
+  color: var(--brand-ink);
+  border-radius: 4px;
+}

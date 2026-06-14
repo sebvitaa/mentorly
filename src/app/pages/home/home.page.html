@@ -1,0 +1,21 @@
+<app-header />
+
+<ion-content [fullscreen]="true">
+  <app-hero
+    [activeFilter]="activeFilter"
+    (search)="onSearch($event)"
+    (filterChange)="onFilterChange($event)"
+  />
+
+  <app-teacher-grid
+    [teachers]="teachers"
+    [isLoading]="isLoading"
+    (teacherSelect)="openTeacher($event)"
+  />
+</ion-content>
+
+<app-teacher-modal
+  [teacher]="selectedTeacher"
+  [isOpen]="isModalOpen"
+  (closed)="closeModal()"
+/>

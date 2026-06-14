@@ -1,0 +1,52 @@
+<div class="container">
+  @if (isLoading) {
+    <div class="grid">
+      @for (skeleton of skeletons; track $index) {
+        <div class="skeleton-card">
+          <div class="skeleton-avatar"></div>
+          <div class="skeleton-line wide"></div>
+          <div class="skeleton-line medium"></div>
+          <div class="skeleton-line narrow"></div>
+        </div>
+      }
+    </div>
+  } @else if (teachers.length === 0) {
+    <div class="no-results">
+      <svg
+        class="no-results-icon"
+        viewBox="0 0 120 120"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <circle cx="60" cy="60" r="50" stroke="#E5E5E5" stroke-width="2" />
+        <path
+          d="M40 55C40 52.7909 41.7909 51 44 51C46.2091 51 48 52.7909 48 55C48 57.2091 46.2091 59 44 59C41.7909 59 40 57.2091 40 55Z"
+          fill="#9CA3AF"
+        />
+        <path
+          d="M72 55C72 52.7909 73.7909 51 76 51C78.2091 51 80 52.7909 80 55C80 57.2091 78.2091 59 76 59C73.7909 59 72 57.2091 72 55Z"
+          fill="#9CA3AF"
+        />
+        <path
+          d="M44 74C44 74 50 68 60 68C70 68 76 74 76 74"
+          stroke="#9CA3AF"
+          stroke-width="2"
+          stroke-linecap="round"
+        />
+      </svg>
+      <p class="no-results-text">
+        Sin profesores para esa búsqueda. Intenta con otro ramo.
+      </p>
+    </div>
+  } @else {
+    <div class="grid">
+      @for (teacher of teachers; track teacher.id) {
+        <app-teacher-card
+          [teacher]="teacher"
+          (select)="teacherSelect.emit(teacher)"
+        />
+      }
+    </div>
+    <p class="end-message">— No hay más resultados —</p>
+  }
+</div>

@@ -1,0 +1,18 @@
+.header {
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: var(--brand-surface);
+  border-bottom: 2px solid var(--brand-ink);
+  padding: 20px 24px;
+  z-index: 100;
+}
+
+.logo {
+  font-family: var(--app-font);
+  font-weight: 700;
+  font-size: 20px;
+  color: var(--brand-primary);
+  margin: 0;
+}

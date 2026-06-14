@@ -1,0 +1,120 @@
+:host {
+  display: block;
+}
+
+.hero {
+  padding: 48px 24px 48px;
+  text-align: center;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.title {
+  font-family: var(--app-font);
+  font-weight: 700;
+  font-size: 48px;
+  color: var(--brand-ink);
+  margin: 0 0 16px;
+}
+
+.subtitle {
+  font-family: var(--app-font);
+  font-weight: 400;
+  font-size: 18px;
+  color: var(--brand-muted);
+  margin: 0 0 32px;
+}
+
+.search-container {
+  max-width: 600px;
+  margin: 0 auto 24px;
+  position: relative;
+  display: flex;
+}
+
+.search-input {
+  flex: 1;
+  font-family: var(--app-font);
+  font-size: 16px;
+  padding: 14px 18px;
+  border: 2px solid var(--brand-ink);
+  border-radius: 6px 0 0 6px;
+  border-right: none;
+  outline: none;
+  background: var(--brand-surface);
+
+  &::placeholder {
+    color: var(--brand-subtle);
+  }
+}
+
+.search-button {
+  font-family: var(--app-font);
+  font-weight: 600;
+  font-size: 16px;
+  padding: 14px 28px;
+  background: var(--brand-primary);
+  color: #fff;
+  border: 2px solid var(--brand-ink);
+  border-left: none;
+  border-radius: 0 6px 6px 0;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+
+  &:hover {
+    background: var(--brand-primary-hover);
+  }
+
+  &:focus {
+    outline: 2px solid var(--brand-primary);
+    outline-offset: 2px;
+  }
+}
+
+.filters {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.filter-chip {
+  font-family: var(--app-font);
+  font-weight: 500;
+  font-size: 14px;
+  padding: 8px 16px;
+  border: 2px solid var(--brand-primary);
+  border-radius: 6px;
+  background: var(--brand-surface);
+  color: var(--brand-primary);
+  cursor: pointer;
+  transition: all 150ms ease;
+
+  &:hover {
+    background: var(--brand-primary-tint);
+  }
+
+  &:focus {
+    outline: 2px solid var(--brand-primary);
+    outline-offset: 2px;
+  }
+
+  &.active {
+    background: var(--brand-primary);
+    color: #fff;
+  }
+}
+
+@media (max-width: 768px) {
+  .title {
+    font-size: 32px;
+  }
+
+  .subtitle {
+    font-size: 16px;
+  }
+
+  .hero {
+    padding: 32px 20px 32px;
+  }
+}

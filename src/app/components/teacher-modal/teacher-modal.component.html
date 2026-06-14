@@ -1,0 +1,104 @@
+<ion-modal
+  [isOpen]="isOpen"
+  class="teacher-modal"
+  (didDismiss)="close()"
+>
+  <ng-template>
+    @if (teacher) {
+      <div class="modal-body">
+        <button
+          type="button"
+          class="close-button"
+          aria-label="Cerrar"
+          (click)="close()"
+        >
+          ×
+        </button>
+
+        <div class="identity">
+          @if (teacher.avatar) {
+            <img class="avatar" [src]="teacher.avatar" [alt]="teacher.name" />
+          } @else {
+            <div class="initials">{{ getInitials(teacher.name) }}</div>
+          }
+          <h2 class="name">{{ teacher.name }}</h2>
+          <p class="career-year">{{ teacher.career }} — {{ teacher.year }}</p>
+          <div class="rating">
+            @let stars = starsFor(teacher.rating);
+            <div class="stars">
+              @for (s of stars.full; track $index) {
+                <span class="star">★</span>
+              }
+              @for (s of stars.empty; track $index) {
+                <span class="star-empty">★</span>
+              }
+            </div>
+            <span class="rating-number">{{ teacher.rating.toFixed(1) }}</span>
+            <span class="review-count">({{ teacher.reviewCount }} reseñas)</span>
+          </div>
+        </div>
+
+        <section class="section">
+          <h3 class="section-title">Sobre mí</h3>
+          <p class="about">{{ teacher.about }}</p>
+        </section>
+
+        <section class="section">
+          <h3 class="section-title">Ramos disponibles</h3>
+          <div class="subjects">
+            @for (subject of teacher.subjects; track subject) {
+              <span class="subject">{{ subject }}</span>
+            }
+          </div>
+        </section>
+
+        <section class="section">
+          <h3 class="section-title">Contacto preferido</h3>
+          <div class="contact">
+            <span>{{ teacher.contact.type === 'email' ? '📧' : '📱' }}</span>
+            <span>{{ teacher.contact.value }}</span>
+          </div>
+          <button type="button" class="contact-button" (click)="contact()">
+            Contactar
+          </button>
+        </section>
+
+        <section class="section">
+          <h3 class="section-title">Agendar hora</h3>
+          <app-schedule-calendar [availability]="teacher.availability" />
+        </section>
+
+        <section class="section">
+          <h3 class="section-title">Rango de precios</h3>
+          <p class="price-range">{{ teacher.priceRange }}</p>
+        </section>
+
+        <section class="section">
+          <h3 class="section-title">Reseñas de estudiantes</h3>
+          <div class="reviews">
+            @for (review of teacher.reviews.slice(0, 5); track $index) {
+              <div class="review">
+                <div class="review-header">
+                  <span class="review-student">{{ review.studentName }}</span>
+                  <div class="review-meta">
+                    @let rStars = starsFor(review.rating);
+                    <div class="review-stars">
+                      @for (s of rStars.full; track $index) {
+                        <span class="star">★</span>
+                      }
+                      @for (s of rStars.empty; track $index) {
+                        <span class="star-empty">★</span>
+                      }
+                    </div>
+                    <span class="review-date">{{ formatLongDate(review.date) }}</span>
+                  </div>
+                </div>
+                <p class="review-comment">{{ review.comment }}</p>
+              </div>
+            }
+          </div>
+        </section>
+      </div>
+    }
+  </ng-template>
+</ion-modal>
