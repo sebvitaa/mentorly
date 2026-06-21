@@ -6,6 +6,8 @@ import {
   IonInput,
   IonItem,
   IonNote,
+  IonSelect,
+  IonSelectOption,
   IonTextarea,
   ToastController,
 } from '@ionic/angular/standalone';
@@ -13,11 +15,13 @@ import {
 import { DayAvailability } from '../../models/teacher.model';
 import { BookingApiService } from '../../api/booking-api.service';
 import { RequestHistoryService } from '../../services/request-history.service';
+import { AcademicCatalogApiService } from '../../api/academic-catalog-api.service';
 import {
   formatFullDate,
   getDayName,
   getDayNumber,
 } from '../../utils/format.util';
+import { CampusDto, CareerDto, FacultyDto } from '../../api/dtos/academic-catalog.dto';
 
 @Component({
   selector: 'app-schedule-calendar',
@@ -29,6 +33,8 @@ import {
     IonInput,
     IonItem,
     IonNote,
+    IonSelect,
+    IonSelectOption,
     IonTextarea,
   ],
   templateUrl: './schedule-calendar.component.html',
@@ -42,6 +48,7 @@ export class ScheduleCalendarComponent implements OnInit {
   private readonly toastController = inject(ToastController);
   private readonly bookingApi = inject(BookingApiService);
   private readonly requestHistory = inject(RequestHistoryService);
+  private readonly academicCatalog = inject(AcademicCatalogApiService);
 
   readonly getDayName = getDayName;
   readonly getDayNumber = getDayNumber;
@@ -54,6 +61,10 @@ export class ScheduleCalendarComponent implements OnInit {
   formSubmitted = false;
   bookingForm = this.createEmptyBookingForm();
   integrityAccepted = false;
+
+  campuses: CampusDto[] = [];
+  faculties: FacultyDto[] = [];
+  careers: CareerDto[] = [];
 
   /** Calendar window: every date from today through two weeks out. */
   allDates: string[] = [];
@@ -70,6 +81,10 @@ export class ScheduleCalendarComponent implements OnInit {
     ) {
       this.allDates.push(new Date(d).toISOString().split('T')[0]);
     }
+
+    this.academicCatalog.getCampuses().subscribe((campuses) => {
+      this.campuses = campuses;
+    });
   }
 
   /** Days that have at least one open time slot. */
@@ -106,6 +121,37 @@ export class ScheduleCalendarComponent implements OnInit {
     this.formSubmitted = false;
   }
 
+  onCampusChange(): void {
+    const campusId = this.bookingForm.campusId;
+    this.bookingForm.facultyId = '';
+    this.bookingForm.careerId = '';
+    this.faculties = [];
+    this.careers = [];
+
+    if (!campusId) {
+      return;
+    }
+
+    this.academicCatalog.getFaculties(campusId).subscribe((faculties) => {
+      this.faculties = faculties;
+    });
+  }
+
+  onFacultyChange(): void {
+    const campusId = this.bookingForm.campusId;
+    const facultyId = this.bookingForm.facultyId;
+    this.bookingForm.careerId = '';
+    this.careers = [];
+
+    if (!campusId || !facultyId) {
+      return;
+    }
+
+    this.academicCatalog.getCareers({ campusId, facultyId }).subscribe((careers) => {
+      this.careers = careers;
+    });
+  }
+
   async confirm(): Promise<void> {
     if (!this.teacherId || !this.selectedDay || !this.selectedTime || this.isBooking) {
       return;
@@ -114,7 +160,7 @@ export class ScheduleCalendarComponent implements OnInit {
     this.formSubmitted = true;
     if (!this.isFormValid()) {
       await this.presentToast(
-        'Completa los datos requeridos, usa correo @udd.cl y acepta la regla de uso.',
+        'Completa los datos requeridos, selecciona tu carrera y acepta la regla de uso.',
         'danger'
       );
       return;
@@ -122,6 +168,9 @@ export class ScheduleCalendarComponent implements OnInit {
 
     const date = this.selectedDay.date;
     const hour = this.selectedTime;
+    const career = this.careers.find((item) => item.id === this.bookingForm.careerId);
+    const faculty = this.faculties.find((item) => item.id === this.bookingForm.facultyId);
+    const campus = this.campuses.find((item) => item.id === this.bookingForm.campusId);
 
     this.isBooking = true;
     this.bookingApi
@@ -131,9 +180,11 @@ export class ScheduleCalendarComponent implements OnInit {
         hour,
         student_first_name: this.bookingForm.firstName.trim(),
         student_last_name: this.bookingForm.lastName.trim(),
-        student_career: this.bookingForm.career.trim(),
         student_current_year: this.bookingForm.currentYear.trim(),
         student_email: this.bookingForm.email.trim(),
+        student_campus_id: this.bookingForm.campusId,
+        student_faculty_id: this.bookingForm.facultyId,
+        student_career_id: this.bookingForm.careerId,
         message: this.bookingForm.message.trim() || null,
       })
       .subscribe({
@@ -148,8 +199,13 @@ export class ScheduleCalendarComponent implements OnInit {
             studentFirstName: booking.student_first_name,
             studentLastName: booking.student_last_name,
             studentEmail: booking.student_email,
-            career: booking.student_career,
             currentYear: booking.student_current_year,
+            campusId: booking.student_campus_id,
+            campusName: campus?.name ?? '',
+            facultyId: booking.student_faculty_id,
+            facultyName: faculty?.name ?? '',
+            careerId: booking.student_career_id,
+            careerName: career?.name ?? '',
             message: booking.message,
             createdAt: booking.created_at,
           });
@@ -164,6 +220,8 @@ export class ScheduleCalendarComponent implements OnInit {
           this.formSubmitted = false;
           this.bookingForm = this.createEmptyBookingForm();
           this.integrityAccepted = false;
+          this.faculties = [];
+          this.careers = [];
           this.isBooking = false;
         },
         error: async () => {
@@ -181,13 +239,13 @@ export class ScheduleCalendarComponent implements OnInit {
       return false;
     }
 
-    const value = this.bookingForm[field].trim();
+    const value = this.bookingForm[field];
     if (field === 'message') {
       return false;
     }
 
     if (field === 'email') {
-      return !this.isUddEmail(value);
+      return !this.isUddEmail(value.trim());
     }
 
     return !value;
@@ -197,7 +255,9 @@ export class ScheduleCalendarComponent implements OnInit {
     return (
       this.isFieldInvalid('firstName') ||
       this.isFieldInvalid('lastName') ||
-      this.isFieldInvalid('career') ||
+      this.isFieldInvalid('campusId') ||
+      this.isFieldInvalid('facultyId') ||
+      this.isFieldInvalid('careerId') ||
       this.isFieldInvalid('currentYear') ||
       this.isFieldInvalid('email')
     );
@@ -211,7 +271,9 @@ export class ScheduleCalendarComponent implements OnInit {
     return (
       !!this.bookingForm.firstName.trim() &&
       !!this.bookingForm.lastName.trim() &&
-      !!this.bookingForm.career.trim() &&
+      !!this.bookingForm.campusId &&
+      !!this.bookingForm.facultyId &&
+      !!this.bookingForm.careerId &&
       !!this.bookingForm.currentYear.trim() &&
       this.isUddEmail(this.bookingForm.email.trim()) &&
       this.integrityAccepted
@@ -235,7 +297,9 @@ export class ScheduleCalendarComponent implements OnInit {
     return {
       firstName: '',
       lastName: '',
-      career: '',
+      campusId: '',
+      facultyId: '',
+      careerId: '',
       currentYear: '',
       email: '',
       message: '',
@@ -259,7 +323,9 @@ export class ScheduleCalendarComponent implements OnInit {
 interface BookingRequestForm {
   firstName: string;
   lastName: string;
-  career: string;
+  campusId: string;
+  facultyId: string;
+  careerId: string;
   currentYear: string;
   email: string;
   message: string;

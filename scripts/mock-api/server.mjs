@@ -17,6 +17,71 @@ const timeSlots = [
   '19:00',
 ];
 
+const campuses = [
+  { id: 'campus-stgo', name: 'Santiago', slug: 'santiago', active: true },
+  { id: 'campus-ccpc', name: 'Concepción', slug: 'concepcion', active: true },
+];
+
+const faculties = [
+  { id: 'fac-arquitectura-arte-stgo', name: 'Arquitectura y Arte', slug: 'arquitectura-arte', active: true },
+  { id: 'fac-ciencias-salud-ccpc', name: 'Ciencias de la Salud', slug: 'ciencias-salud', active: true },
+  { id: 'fac-comunicaciones-stgo', name: 'Comunicaciones', slug: 'comunicaciones', active: true },
+  { id: 'fac-derecho-stgo', name: 'Derecho', slug: 'derecho', active: true },
+  { id: 'fac-diseno-stgo', name: 'Diseño', slug: 'diseno', active: true },
+  { id: 'fac-economia-negocios-stgo', name: 'Economía y Negocios', slug: 'economia-negocios', active: true },
+  { id: 'fac-educacion-stgo', name: 'Educación', slug: 'educacion', active: true },
+  { id: 'fac-gobierno-stgo', name: 'Gobierno', slug: 'gobierno', active: true },
+  { id: 'fac-ingenieria-stgo', name: 'Ingeniería', slug: 'ingenieria', active: true },
+  { id: 'fac-medicina-stgo', name: 'Medicina Clínica Alemana UDD', slug: 'medicina', active: true },
+  { id: 'fac-psicologia-stgo', name: 'Psicología', slug: 'psicologia', active: true },
+];
+
+const careers = [
+  // Santiago
+  { id: 'career-stgo-arquitectura-arte-arquitectura', faculty_id: 'fac-arquitectura-arte-stgo', campus_id: 'campus-stgo', name: 'Arquitectura', slug: 'arquitectura', active: true },
+  { id: 'career-stgo-comunicaciones-cine-comunicacion-audiovisual', faculty_id: 'fac-comunicaciones-stgo', campus_id: 'campus-stgo', name: 'Cine y Comunicación Audiovisual', slug: 'cine-comunicacion-audiovisual', active: true },
+  { id: 'career-stgo-comunicaciones-periodismo-comunicacion', faculty_id: 'fac-comunicaciones-stgo', campus_id: 'campus-stgo', name: 'Periodismo y Comunicación', slug: 'periodismo-comunicacion', active: true },
+  { id: 'career-stgo-comunicaciones-publicidad-marketing', faculty_id: 'fac-comunicaciones-stgo', campus_id: 'campus-stgo', name: 'Publicidad y Marketing', slug: 'publicidad-marketing', active: true },
+  { id: 'career-stgo-derecho-derecho', faculty_id: 'fac-derecho-stgo', campus_id: 'campus-stgo', name: 'Derecho', slug: 'derecho', active: true },
+  { id: 'career-stgo-diseno-diseno', faculty_id: 'fac-diseno-stgo', campus_id: 'campus-stgo', name: 'Diseño', slug: 'diseno', active: true },
+  { id: 'career-stgo-economia-negocios-ing-comercial', faculty_id: 'fac-economia-negocios-stgo', campus_id: 'campus-stgo', name: 'Ingeniería Comercial', slug: 'ingenieria-comercial', active: true },
+  { id: 'career-stgo-economia-negocios-global-business-administration', faculty_id: 'fac-economia-negocios-stgo', campus_id: 'campus-stgo', name: 'Global Business Administration', slug: 'global-business-administration', active: true },
+  { id: 'career-stgo-economia-negocios-negocios-ciencia-datos', faculty_id: 'fac-economia-negocios-stgo', campus_id: 'campus-stgo', name: 'Negocios y Ciencia de Datos', slug: 'negocios-ciencia-datos', active: true },
+  { id: 'career-stgo-educacion-pedagogia-educacion-basica', faculty_id: 'fac-educacion-stgo', campus_id: 'campus-stgo', name: 'Pedagogía en Educación Básica', slug: 'pedagogia-educacion-basica', active: true },
+  { id: 'career-stgo-educacion-pedagogia-educacion-parvulos', faculty_id: 'fac-educacion-stgo', campus_id: 'campus-stgo', name: 'Pedagogía en Educación de Párvulos', slug: 'pedagogia-educacion-parvulos', active: true },
+  { id: 'career-stgo-gobierno-ciencia-politica-politicas-publicas', faculty_id: 'fac-gobierno-stgo', campus_id: 'campus-stgo', name: 'Ciencia Política y Políticas Públicas', slug: 'ciencia-politica-politicas-publicas', active: true },
+  { id: 'career-stgo-ingenieria-ing-civil-industrial', faculty_id: 'fac-ingenieria-stgo', campus_id: 'campus-stgo', name: 'Ingeniería Civil Industrial', slug: 'ingenieria-civil-industrial', active: true },
+  { id: 'career-stgo-ingenieria-ing-civil-informatica-innovacion', faculty_id: 'fac-ingenieria-stgo', campus_id: 'campus-stgo', name: 'Ingeniería Civil en Informática e Innovación Tecnológica', slug: 'ingenieria-civil-informatica-innovacion', active: true },
+  { id: 'career-stgo-ingenieria-ing-civil-informatica-ia', faculty_id: 'fac-ingenieria-stgo', campus_id: 'campus-stgo', name: 'Ingeniería Civil en Informática e Inteligencia Artificial', slug: 'ingenieria-civil-informatica-ia', active: true },
+  { id: 'career-stgo-ingenieria-ing-civil-biomedicina', faculty_id: 'fac-ingenieria-stgo', campus_id: 'campus-stgo', name: 'Ingeniería Civil en BioMedicina', slug: 'ingenieria-civil-biomedicina', active: true },
+  { id: 'career-stgo-ingenieria-ing-civil-mineria', faculty_id: 'fac-ingenieria-stgo', campus_id: 'campus-stgo', name: 'Ingeniería Civil en Minería', slug: 'ingenieria-civil-mineria', active: true },
+  { id: 'career-stgo-ingenieria-ing-civil-obras-civiles', faculty_id: 'fac-ingenieria-stgo', campus_id: 'campus-stgo', name: 'Ingeniería Civil en Obras Civiles', slug: 'ingenieria-civil-obras-civiles', active: true },
+  { id: 'career-stgo-ingenieria-geologia', faculty_id: 'fac-ingenieria-stgo', campus_id: 'campus-stgo', name: 'Geología', slug: 'geologia', active: true },
+  { id: 'career-stgo-medicina-medicina', faculty_id: 'fac-medicina-stgo', campus_id: 'campus-stgo', name: 'Medicina', slug: 'medicina', active: true },
+  { id: 'career-stgo-medicina-enfermeria', faculty_id: 'fac-medicina-stgo', campus_id: 'campus-stgo', name: 'Enfermería', slug: 'enfermeria', active: true },
+  { id: 'career-stgo-medicina-kinesiologia', faculty_id: 'fac-medicina-stgo', campus_id: 'campus-stgo', name: 'Kinesiología', slug: 'kinesiologia', active: true },
+  { id: 'career-stgo-medicina-nutricion-dietetica', faculty_id: 'fac-medicina-stgo', campus_id: 'campus-stgo', name: 'Nutrición y Dietética', slug: 'nutricion-dietetica', active: true },
+  { id: 'career-stgo-medicina-obstetricia', faculty_id: 'fac-medicina-stgo', campus_id: 'campus-stgo', name: 'Obstetricia', slug: 'obstetricia', active: true },
+  { id: 'career-stgo-medicina-odontologia', faculty_id: 'fac-medicina-stgo', campus_id: 'campus-stgo', name: 'Odontología', slug: 'odontologia', active: true },
+  { id: 'career-stgo-medicina-quimica-farmacia', faculty_id: 'fac-medicina-stgo', campus_id: 'campus-stgo', name: 'Química y Farmacia', slug: 'quimica-farmacia', active: true },
+  { id: 'career-stgo-medicina-tecnologia-medica', faculty_id: 'fac-medicina-stgo', campus_id: 'campus-stgo', name: 'Tecnología Médica', slug: 'tecnologia-medica', active: true },
+  { id: 'career-stgo-medicina-terapia-ocupacional', faculty_id: 'fac-medicina-stgo', campus_id: 'campus-stgo', name: 'Terapia Ocupacional', slug: 'terapia-ocupacional', active: true },
+  { id: 'career-stgo-psicologia-psicologia', faculty_id: 'fac-psicologia-stgo', campus_id: 'campus-stgo', name: 'Psicología', slug: 'psicologia', active: true },
+
+  // Concepción
+  { id: 'career-ccpc-arquitectura-arte-arquitectura', faculty_id: 'fac-arquitectura-arte-stgo', campus_id: 'campus-ccpc', name: 'Arquitectura', slug: 'arquitectura', active: true },
+  { id: 'career-ccpc-derecho-derecho', faculty_id: 'fac-derecho-stgo', campus_id: 'campus-ccpc', name: 'Derecho', slug: 'derecho', active: true },
+  { id: 'career-ccpc-diseno-diseno', faculty_id: 'fac-diseno-stgo', campus_id: 'campus-ccpc', name: 'Diseño', slug: 'diseno', active: true },
+  { id: 'career-ccpc-economia-negocios-ing-comercial', faculty_id: 'fac-economia-negocios-stgo', campus_id: 'campus-ccpc', name: 'Ingeniería Comercial', slug: 'ingenieria-comercial', active: true },
+  { id: 'career-ccpc-ingenieria-ing-civil-industrial', faculty_id: 'fac-ingenieria-stgo', campus_id: 'campus-ccpc', name: 'Ingeniería Civil Industrial', slug: 'ingenieria-civil-industrial', active: true },
+  { id: 'career-ccpc-ingenieria-ing-civil-informatica-innovacion', faculty_id: 'fac-ingenieria-stgo', campus_id: 'campus-ccpc', name: 'Ingeniería Civil en Informática e Innovación Tecnológica', slug: 'ingenieria-civil-informatica-innovacion', active: true },
+  { id: 'career-ccpc-comunicaciones-periodismo-comunicacion', faculty_id: 'fac-comunicaciones-stgo', campus_id: 'campus-ccpc', name: 'Periodismo y Comunicación', slug: 'periodismo-comunicacion', active: true },
+  { id: 'career-ccpc-psicologia-psicologia', faculty_id: 'fac-psicologia-stgo', campus_id: 'campus-ccpc', name: 'Psicología', slug: 'psicologia', active: true },
+  { id: 'career-ccpc-ciencias-salud-enfermeria', faculty_id: 'fac-ciencias-salud-ccpc', campus_id: 'campus-ccpc', name: 'Enfermería', slug: 'enfermeria', active: true },
+  { id: 'career-ccpc-ciencias-salud-kinesiologia', faculty_id: 'fac-ciencias-salud-ccpc', campus_id: 'campus-ccpc', name: 'Kinesiología', slug: 'kinesiologia', active: true },
+  { id: 'career-ccpc-ciencias-salud-odontologia', faculty_id: 'fac-ciencias-salud-ccpc', campus_id: 'campus-ccpc', name: 'Odontología', slug: 'odontologia', active: true },
+];
+
 const teacherSeeds = [
   {
     id: '1',
@@ -138,6 +203,18 @@ const server = createServer(async (request, response) => {
       return sendJson(response, { ok: true, service: 'mentorly-mock-api' });
     }
 
+    if (url.pathname === `${API_PREFIX}/campuses` && request.method === 'GET') {
+      return sendJson(response, campuses);
+    }
+
+    if (url.pathname === `${API_PREFIX}/faculties` && request.method === 'GET') {
+      return sendJson(response, filterFaculties(url));
+    }
+
+    if (url.pathname === `${API_PREFIX}/careers` && request.method === 'GET') {
+      return sendJson(response, filterCareers(url));
+    }
+
     if (url.pathname === `${API_PREFIX}/teachers` && request.method === 'GET') {
       return sendJson(response, filterTeachers(url));
     }
@@ -231,6 +308,41 @@ function generateAvailability(seed) {
   return availability;
 }
 
+function filterFaculties(url) {
+  const campusId = url.searchParams.get('campus_id');
+  if (!campusId) {
+    return faculties;
+  }
+
+  const facultyIdsWithCareers = new Set(
+    careers
+      .filter((career) => career.campus_id === campusId && career.active)
+      .map((career) => career.faculty_id)
+  );
+
+  return faculties.filter(
+    (faculty) => faculty.active && facultyIdsWithCareers.has(faculty.id)
+  );
+}
+
+function filterCareers(url) {
+  const campusId = url.searchParams.get('campus_id');
+  const facultyId = url.searchParams.get('faculty_id');
+
+  return careers.filter((career) => {
+    if (!career.active) {
+      return false;
+    }
+    if (campusId && career.campus_id !== campusId) {
+      return false;
+    }
+    if (facultyId && career.faculty_id !== facultyId) {
+      return false;
+    }
+    return true;
+  });
+}
+
 function filterTeachers(url) {
   const query = normalize(url.searchParams.get('q') ?? '');
   const subject = normalize(url.searchParams.get('subject') ?? '');
@@ -257,9 +369,11 @@ async function createBooking(request, response) {
     hour,
     student_first_name: studentFirstName,
     student_last_name: studentLastName,
-    student_career: studentCareer,
     student_current_year: studentCurrentYear,
     student_email: studentEmail,
+    student_campus_id: studentCampusId,
+    student_faculty_id: studentFacultyId,
+    student_career_id: studentCareerId,
     message,
   } = body;
 
@@ -269,15 +383,17 @@ async function createBooking(request, response) {
     !hour ||
     !studentFirstName ||
     !studentLastName ||
-    !studentCareer ||
     !studentCurrentYear ||
-    !studentEmail
+    !studentEmail ||
+    !studentCampusId ||
+    !studentFacultyId ||
+    !studentCareerId
   ) {
     return sendError(
       response,
       422,
       'VALIDATION_ERROR',
-      'teacher_id, date, hour and student data are required'
+      'teacher_id, date, hour, student data and academic catalog selections are required'
     );
   }
 
@@ -296,6 +412,23 @@ async function createBooking(request, response) {
       422,
       'BOOKING_PAST_DATE',
       'Past dates cannot be booked.'
+    );
+  }
+
+  const career = careers.find(
+    (item) =>
+      item.id === studentCareerId &&
+      item.campus_id === studentCampusId &&
+      item.faculty_id === studentFacultyId &&
+      item.active
+  );
+
+  if (!career) {
+    return sendError(
+      response,
+      422,
+      'INVALID_ACADEMIC_SELECTION',
+      'The selected campus, faculty and career combination is not valid.'
     );
   }
 
@@ -331,9 +464,12 @@ async function createBooking(request, response) {
     hour,
     student_first_name: studentFirstName,
     student_last_name: studentLastName,
-    student_career: studentCareer,
     student_current_year: studentCurrentYear,
     student_email: studentEmail,
+    student_campus_id: studentCampusId,
+    student_faculty_id: studentFacultyId,
+    student_career_id: studentCareerId,
+    student_career: career.name,
     message: message ?? null,
     tutor_response_message: null,
     created_at: now,

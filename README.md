@@ -42,6 +42,9 @@ y agendar una hora desde un calendario de disponibilidad.
   reseñas y botón para guardar favoritos.
 - **Agendamiento**: calendario de dos semanas con horas disponibles y
   solicitud pendiente de confirmación por el tutor.
+- **Catálogo académico UDD**: al agendar, el estudiante selecciona su campus,
+  facultad y carrera a través de selects dependientes, garantizando datos
+  normalizados.
 - **Historial local** de solicitudes y tutores favoritos en `/requests`,
   persistido con `localStorage`.
 - **Uso responsable**: el formulario exige aceptar que la tutoría es para
@@ -210,6 +213,9 @@ Endpoints disponibles:
 | Método | Ruta | Uso |
 |--------|------|-----|
 | `GET` | `/api/health` | Healthcheck de la mock API. |
+| `GET` | `/api/campuses` | Campus UDD disponibles. |
+| `GET` | `/api/faculties` | Facultades por campus (`?campus_id=...`). |
+| `GET` | `/api/careers` | Carreras por facultad y campus (`?faculty_id=...&campus_id=...`). |
 | `GET` | `/api/teachers` | Listado de tutores. Acepta `q` y `subject`. |
 | `GET` | `/api/teachers/:id` | Detalle de un tutor. |
 | `GET` | `/api/teachers/:id/availability` | Disponibilidad de un tutor. |
@@ -230,9 +236,11 @@ Body mínimo para crear una reserva:
   "hour": "10:00",
   "student_first_name": "Josefa",
   "student_last_name": "Perez",
-  "student_career": "Ingenieria Comercial",
   "student_current_year": "2do ano",
-  "student_email": "josefa.perez@udd.cl"
+  "student_email": "josefa.perez@udd.cl",
+  "student_campus_id": "campus-stgo",
+  "student_faculty_id": "fac-economia-negocios-stgo",
+  "student_career_id": "career-stgo-economia-negocios-ing-comercial"
 }
 ```
 

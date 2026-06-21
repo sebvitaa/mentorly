@@ -10,8 +10,13 @@ export interface LocalRequest {
   studentFirstName: string;
   studentLastName: string;
   studentEmail: string;
-  career: string;
   currentYear: string;
+  campusId: string;
+  campusName: string;
+  facultyId: string;
+  facultyName: string;
+  careerId: string;
+  careerName: string;
   message: string | null;
   createdAt: string;
 }

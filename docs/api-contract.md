@@ -106,7 +106,9 @@ interface UserDto {
   first_name: string;
   last_name: string;
   email: string;
-  career: string;
+  campus_id: string;
+  faculty_id: string;
+  career_id: string;
   current_year: string;
   roles: Array<'student' | 'tutor' | 'admin'>;
   created_at: string;
@@ -118,7 +120,49 @@ Reglas:
 
 - `email` debe pertenecer a dominio institucional UDD.
 - Dominio exacto recomendado: `@udd.cl`.
+- `campus_id`, `faculty_id` y `career_id` deben referenciar un catalogo academico valido.
 - Si la universidad usa otros dominios institucionales, deben agregarse explicitamente.
+
+### Campus
+
+```ts
+interface CampusDto {
+  id: string;
+  name: string;
+  slug: string;
+  active: boolean;
+}
+```
+
+### Faculty
+
+```ts
+interface FacultyDto {
+  id: string;
+  name: string;
+  slug: string;
+  active: boolean;
+}
+```
+
+### Career
+
+```ts
+interface CareerDto {
+  id: string;
+  faculty_id: string;
+  campus_id: string;
+  name: string;
+  slug: string;
+  active: boolean;
+}
+```
+
+Reglas:
+
+- Una carrera pertenece a una facultad y a un campus.
+- La combinacion campus + facultad + carrera debe ser valida.
+- El MVP solo incluye carreras completas de pregrado; se excluyen bachilleratos y planes comunes.
 
 ### TeacherProfile
 
@@ -218,9 +262,12 @@ interface BookingDto {
   hour: string;
   student_first_name: string;
   student_last_name: string;
-  student_career: string;
   student_current_year: string;
   student_email: string;
+  student_campus_id: string;
+  student_faculty_id: string;
+  student_career_id: string;
+  student_career: string;
   message: string | null;
   tutor_response_message: string | null;
   created_at: string;
@@ -470,6 +517,84 @@ Request:
 
 Respuesta `200`: `TeacherProfileDto`.
 
+### Academic Catalog
+
+#### GET `/api/campuses`
+
+Lista campus disponibles.
+
+Respuesta `200`:
+
+```json
+[
+  {
+    "id": "campus-stgo",
+    "name": "Santiago",
+    "slug": "santiago",
+    "active": true
+  },
+  {
+    "id": "campus-ccpc",
+    "name": "Concepcion",
+    "slug": "concepcion",
+    "active": true
+  }
+]
+```
+
+#### GET `/api/faculties`
+
+Lista facultades disponibles, filtradas por campus cuando se envia `campus_id`.
+
+Query params:
+
+| Parametro | Tipo | Descripcion |
+|-----------|------|-------------|
+| `campus_id` | string | ID del campus para filtrar facultades. |
+
+Respuesta `200`:
+
+```json
+[
+  {
+    "id": "fac-economia-negocios-stgo",
+    "name": "Facultad de Economia y Negocios",
+    "slug": "economia-negocios",
+    "active": true
+  }
+]
+```
+
+#### GET `/api/careers`
+
+Lista carreras disponibles, filtradas por facultad y campus.
+
+Query params:
+
+| Parametro | Tipo | Descripcion |
+|-----------|------|-------------|
+| `faculty_id` | string | ID de la facultad. Requerido. |
+| `campus_id` | string | ID del campus. Requerido. |
+
+Respuesta `200`:
+
+```json
+[
+  {
+    "id": "career-stgo-economia-negocios-ing-comercial",
+    "faculty_id": "fac-economia-negocios-stgo",
+    "campus_id": "campus-stgo",
+    "name": "Ingenieria Comercial",
+    "slug": "ingenieria-comercial",
+    "active": true
+  }
+]
+```
+
+Errores:
+
+- `400 VALIDATION_ERROR` si falta `faculty_id` o `campus_id`.
+
 ### Subjects
 
 #### GET `/api/subjects`
@@ -586,9 +711,11 @@ Request:
   "hour": "09:00",
   "student_first_name": "Josefa",
   "student_last_name": "Perez",
-  "student_career": "Ingenieria Comercial",
   "student_current_year": "2do ano",
   "student_email": "josefa.perez@udd.cl",
+  "student_campus_id": "campus-stgo",
+  "student_faculty_id": "fac-economia-negocios-stgo",
+  "student_career_id": "career-stgo-economia-negocios-ing-comercial",
   "message": "Necesito preparar la solemne de Calculo I."
 }
 ```
@@ -606,9 +733,12 @@ Respuesta `201`:
   "hour": "09:00",
   "student_first_name": "Josefa",
   "student_last_name": "Perez",
-  "student_career": "Ingenieria Comercial",
   "student_current_year": "2do ano",
   "student_email": "josefa.perez@udd.cl",
+  "student_campus_id": "campus-stgo",
+  "student_faculty_id": "fac-economia-negocios-stgo",
+  "student_career_id": "career-stgo-economia-negocios-ing-comercial",
+  "student_career": "Ingenieria Comercial",
   "message": "Necesito preparar la solemne de Calculo I.",
   "tutor_response_message": null,
   "created_at": "2026-06-20T18:00:00.000Z",
@@ -621,6 +751,7 @@ Respuesta `201`:
 Reglas:
 
 - Debe validar correo institucional.
+- Debe validar que `student_campus_id`, `student_faculty_id` y `student_career_id` formen una combinacion valida del catalogo academico.
 - Debe validar que la fecha/hora exista en la disponibilidad del tutor.
 - Debe validar que la fecha/hora no este ocupada.
 - La reserva queda `pending`, no `confirmed`.
@@ -788,7 +919,7 @@ Codigos de negocio sugeridos:
 ## 10. Reglas de Negocio
 
 - Solo estudiantes de la Universidad del Desarrollo pueden reservar.
-- La informacion minima para reservar es nombre, apellido, carrera, ano cursando y correo institucional.
+- La informacion minima para reservar es nombre, apellido, campus, facultad, carrera, ano cursando y correo institucional.
 - El correo institucional debe validarse antes de crear la reserva.
 - Un usuario puede ser estudiante y tutor al mismo tiempo.
 - El perfil de tutor debe ser administrable.
@@ -838,6 +969,9 @@ Endpoints implementados actualmente:
 | Metodo | Ruta | Estado |
 |--------|------|--------|
 | `GET` | `/api/health` | Implementado |
+| `GET` | `/api/campuses` | Implementado |
+| `GET` | `/api/faculties` | Implementado |
+| `GET` | `/api/careers` | Implementado |
 | `GET` | `/api/teachers` | Implementado |
 | `GET` | `/api/teachers/:id` | Implementado |
 | `GET` | `/api/teachers/:id/availability` | Implementado |
@@ -866,6 +1000,7 @@ Diferencias con backend real esperado:
 - Definir proveedor de autenticacion.
 - Definir si los endpoints de tutores seran publicos o requeriran login.
 - Confirmar dominio institucional exacto permitido para correos UDD.
+- Confirmar catalogo academico UDD completo y vigente (campus, facultades y carreras).
 - Definir canal de notificaciones.
 - Definir duracion de clases y reglas de bloques horarios.
 - Definir si habra modalidad online, presencial o ambas.

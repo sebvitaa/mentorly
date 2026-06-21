@@ -52,7 +52,16 @@
                       <strong>Estudiante</strong>
                       <p>
                         {{ request.studentFirstName }} {{ request.studentLastName }} ·
-                        {{ request.career }} · {{ request.currentYear }}
+                        {{ request.currentYear }}
+                      </p>
+                    </ion-label>
+                  </ion-item>
+                  <ion-item>
+                    <ion-label>
+                      <strong>Carrera</strong>
+                      <p>
+                        {{ request.campusName }} · {{ request.facultyName }} ·
+                        {{ request.careerName }}
                       </p>
                     </ion-label>
                   </ion-item>

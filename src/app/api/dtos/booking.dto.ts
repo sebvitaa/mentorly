@@ -5,9 +5,11 @@ export interface CreateBookingDto {
   hour: string;
   student_first_name: string;
   student_last_name: string;
-  student_career: string;
   student_current_year: string;
   student_email: string;
+  student_campus_id: string;
+  student_faculty_id: string;
+  student_career_id: string;
   message?: string | null;
 }
 
@@ -29,9 +31,12 @@ export interface BookingDto {
   hour: string;
   student_first_name: string;
   student_last_name: string;
-  student_career: string;
   student_current_year: string;
   student_email: string;
+  student_campus_id: string;
+  student_faculty_id: string;
+  student_career_id: string;
+  student_career: string;
   message: string | null;
   tutor_response_message: string | null;
   created_at: string;

@@ -86,17 +86,61 @@
               </div>
 
               <label class="booking-field">
-                <span>Carrera</span>
-                <ion-input
-                  type="text"
-                  name="career"
+                <span>Campus</span>
+                <ion-select
+                  name="campusId"
                   fill="outline"
-                  autocomplete="organization-title"
-                  placeholder="Ej: Ingenieria Comercial"
-                  [(ngModel)]="bookingForm.career"
-                  [class.invalid]="isFieldInvalid('career')"
-                />
+                  placeholder="Selecciona tu campus"
+                  [(ngModel)]="bookingForm.campusId"
+                  [class.invalid]="isFieldInvalid('campusId')"
+                  (ionChange)="onCampusChange()"
+                >
+                  @for (campus of campuses; track campus.id) {
+                    <ion-select-option [value]="campus.id">
+                      {{ campus.name }}
+                    </ion-select-option>
+                  }
+                </ion-select>
               </label>
+
+              <div class="booking-form-grid">
+                <label class="booking-field">
+                  <span>Facultad</span>
+                  <ion-select
+                    name="facultyId"
+                    fill="outline"
+                    placeholder="Facultad"
+                    [(ngModel)]="bookingForm.facultyId"
+                    [class.invalid]="isFieldInvalid('facultyId')"
+                    [disabled]="!bookingForm.campusId"
+                    (ionChange)="onFacultyChange()"
+                  >
+                    @for (faculty of faculties; track faculty.id) {
+                      <ion-select-option [value]="faculty.id">
+                        {{ faculty.name }}
+                      </ion-select-option>
+                    }
+                  </ion-select>
+                </label>
+
+                <label class="booking-field">
+                  <span>Carrera</span>
+                  <ion-select
+                    name="careerId"
+                    fill="outline"
+                    placeholder="Carrera"
+                    [(ngModel)]="bookingForm.careerId"
+                    [class.invalid]="isFieldInvalid('careerId')"
+                    [disabled]="!bookingForm.facultyId"
+                  >
+                    @for (career of careers; track career.id) {
+                      <ion-select-option [value]="career.id">
+                        {{ career.name }}
+                      </ion-select-option>
+                    }
+                  </ion-select>
+                </label>
+              </div>
 
               <div class="booking-form-grid">
                 <label class="booking-field">
@@ -156,7 +200,7 @@
 
               @if (hasFormErrors) {
                 <ion-note color="danger" class="form-error">
-                  Completa todos los campos y usa un correo institucional &#64;udd.cl.
+                  Completa todos los campos, selecciona tu carrera y usa un correo institucional &#64;udd.cl.
                 </ion-note>
               }
 
