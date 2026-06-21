@@ -27,7 +27,7 @@ export class BookingApiService {
         student_faculty_id: payload.student_faculty_id,
         student_career_id: payload.student_career_id,
         student_career: 'Carrera mock',
-        student_current_year: payload.student_current_year,
+        student_admission_year: payload.student_admission_year,
         student_email: payload.student_email,
         message: payload.message ?? null,
         tutor_response_message: null,

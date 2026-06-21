@@ -102,14 +102,13 @@ Reglas:
 
 ```ts
 interface UserDto {
-  id: string;
+  email: string;
   first_name: string;
   last_name: string;
-  email: string;
   campus_id: string;
   faculty_id: string;
   career_id: string;
-  current_year: string;
+  admission_year: string;
   roles: Array<'student' | 'tutor' | 'admin'>;
   created_at: string;
   updated_at: string;
@@ -118,9 +117,11 @@ interface UserDto {
 
 Reglas:
 
+- `email` es el identificador unico del usuario (PK logica).
 - `email` debe pertenecer a dominio institucional UDD.
 - Dominio exacto recomendado: `@udd.cl`.
 - `campus_id`, `faculty_id` y `career_id` deben referenciar un catalogo academico valido.
+- Toda cuenta nace con rol `student`. Puede adquirir tambien rol `tutor`, pero sigue siendo la misma persona/cuenta.
 - Si la universidad usa otros dominios institucionales, deben agregarse explicitamente.
 
 ### Campus
@@ -262,7 +263,7 @@ interface BookingDto {
   hour: string;
   student_first_name: string;
   student_last_name: string;
-  student_current_year: string;
+  student_admission_year: string;
   student_email: string;
   student_campus_id: string;
   student_faculty_id: string;
@@ -348,6 +349,59 @@ Respuesta `200`:
 
 ### Auth
 
+#### POST `/api/auth/register`
+
+Crea una cuenta de estudiante. El correo institucional UDD es el identificador unico.
+
+Request:
+
+```json
+{
+  "first_name": "Josefa",
+  "last_name": "Perez",
+  "email": "josefa.perez@udd.cl",
+  "password": "secret123",
+  "campus_id": "campus-stgo",
+  "faculty_id": "fac-economia-negocios-stgo",
+  "career_id": "career-stgo-economia-negocios-ing-comercial",
+  "admission_year": "2023",
+  "wants_to_teach": true
+}
+```
+
+Respuesta `201`:
+
+```json
+{
+  "access_token": "jwt-token",
+  "user": {
+    "email": "josefa.perez@udd.cl",
+    "first_name": "Josefa",
+    "last_name": "Perez",
+    "campus_id": "campus-stgo",
+    "faculty_id": "fac-economia-negocios-stgo",
+    "career_id": "career-stgo-economia-negocios-ing-comercial",
+    "admission_year": "2023",
+    "roles": ["student", "tutor"]
+  }
+}
+```
+
+Reglas:
+
+- `email` debe pertenecer a `@udd.cl`.
+- `password` debe tener al menos 8 caracteres.
+- No puede existir otra cuenta con el mismo `email`.
+- `wants_to_teach` agrega el rol `tutor` a la misma cuenta; no crea un perfil de tutor completo todavia.
+- La combinacion `campus_id`, `faculty_id` y `career_id` debe ser valida.
+
+Errores:
+
+- `422 INVALID_UDD_EMAIL` si el correo no es institucional.
+- `422 INVALID_PASSWORD` si la contraseña es demasiado corta.
+- `409 EMAIL_ALREADY_REGISTERED` si el correo ya esta registrado.
+- `422 INVALID_ACADEMIC_SELECTION` si la combinacion campus/facultad/carrera no es valida.
+
 #### POST `/api/auth/login`
 
 Inicia sesion.
@@ -357,7 +411,7 @@ Request:
 ```json
 {
   "email": "estudiante@udd.cl",
-  "password": "secret"
+  "password": "secret123"
 }
 ```
 
@@ -367,12 +421,13 @@ Respuesta `200`:
 {
   "access_token": "jwt-token",
   "user": {
-    "id": "user-1",
+    "email": "josefa.perez@udd.cl",
     "first_name": "Josefa",
     "last_name": "Perez",
-    "email": "josefa.perez@udd.cl",
-    "career": "Ingenieria Civil Industrial",
-    "current_year": "3er ano",
+    "campus_id": "campus-stgo",
+    "faculty_id": "fac-economia-negocios-stgo",
+    "career_id": "career-stgo-economia-negocios-ing-comercial",
+    "admission_year": "2023",
     "roles": ["student"]
   }
 }
@@ -394,12 +449,13 @@ Respuesta `200`:
 
 ```json
 {
-  "id": "user-1",
+  "email": "josefa.perez@udd.cl",
   "first_name": "Josefa",
   "last_name": "Perez",
-  "email": "josefa.perez@udd.cl",
-  "career": "Ingenieria Civil Industrial",
-  "current_year": "3er ano",
+  "campus_id": "campus-stgo",
+  "faculty_id": "fac-economia-negocios-stgo",
+  "career_id": "career-stgo-economia-negocios-ing-comercial",
+  "admission_year": "2023",
   "roles": ["student", "tutor"],
   "created_at": "2026-06-20T18:00:00.000Z",
   "updated_at": "2026-06-20T18:00:00.000Z"
@@ -711,7 +767,7 @@ Request:
   "hour": "09:00",
   "student_first_name": "Josefa",
   "student_last_name": "Perez",
-  "student_current_year": "2do ano",
+  "student_admission_year": "2023",
   "student_email": "josefa.perez@udd.cl",
   "student_campus_id": "campus-stgo",
   "student_faculty_id": "fac-economia-negocios-stgo",
@@ -733,7 +789,7 @@ Respuesta `201`:
   "hour": "09:00",
   "student_first_name": "Josefa",
   "student_last_name": "Perez",
-  "student_current_year": "2do ano",
+  "student_admission_year": "2023",
   "student_email": "josefa.perez@udd.cl",
   "student_campus_id": "campus-stgo",
   "student_faculty_id": "fac-economia-negocios-stgo",
@@ -908,6 +964,10 @@ Codigos de negocio sugeridos:
 | Codigo | Descripcion |
 |--------|-------------|
 | `INVALID_UDD_EMAIL` | El correo no pertenece al dominio institucional permitido. |
+| `INVALID_PASSWORD` | La contraseña no cumple los requisitos mínimos. |
+| `EMAIL_ALREADY_REGISTERED` | El correo ya tiene una cuenta. |
+| `INVALID_CREDENTIALS` | Correo o contraseña incorrectos. |
+| `UNAUTHENTICATED` | Falta token de autenticación o es inválido. |
 | `TEACHER_NOT_FOUND` | Tutor no encontrado. |
 | `SUBJECT_NOT_FOUND` | Ramo no encontrado. |
 | `BOOKING_NOT_FOUND` | Reserva no encontrada. |
@@ -919,7 +979,7 @@ Codigos de negocio sugeridos:
 ## 10. Reglas de Negocio
 
 - Solo estudiantes de la Universidad del Desarrollo pueden reservar.
-- La informacion minima para reservar es nombre, apellido, campus, facultad, carrera, ano cursando y correo institucional.
+- La informacion minima para reservar es nombre, apellido, campus, facultad, carrera, ano de ingreso y correo institucional.
 - El correo institucional debe validarse antes de crear la reserva.
 - Un usuario puede ser estudiante y tutor al mismo tiempo.
 - El perfil de tutor debe ser administrable.
@@ -969,6 +1029,10 @@ Endpoints implementados actualmente:
 | Metodo | Ruta | Estado |
 |--------|------|--------|
 | `GET` | `/api/health` | Implementado |
+| `POST` | `/api/auth/register` | Implementado |
+| `POST` | `/api/auth/login` | Implementado |
+| `POST` | `/api/auth/logout` | Implementado |
+| `GET` | `/api/auth/me` | Implementado |
 | `GET` | `/api/campuses` | Implementado |
 | `GET` | `/api/faculties` | Implementado |
 | `GET` | `/api/careers` | Implementado |
@@ -987,7 +1051,7 @@ Endpoints implementados actualmente:
 
 Diferencias con backend real esperado:
 
-- No tiene autenticacion real.
+- Tiene autenticacion simulada en memoria; no use contraseñas reales.
 - No persiste datos en disco o base de datos.
 - Las reservas se guardan solo en memoria.
 - Las reservas se crean como `pending` y bloquean el horario hasta aceptacion, rechazo o cancelacion.
@@ -997,8 +1061,8 @@ Diferencias con backend real esperado:
 
 ## 13. Pendientes
 
-- Definir proveedor de autenticacion.
 - Definir si los endpoints de tutores seran publicos o requeriran login.
+- Definir proveedor de hashing de contraseñas y estrategia de tokens (JWT, sesiones, etc.).
 - Confirmar dominio institucional exacto permitido para correos UDD.
 - Confirmar catalogo academico UDD completo y vigente (campus, facultades y carreras).
 - Definir canal de notificaciones.

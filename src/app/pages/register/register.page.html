@@ -1,0 +1,177 @@
+<ion-content [fullscreen]="true">
+  <main class="auth-page">
+    <section class="auth-card">
+      <div class="auth-header">
+        <p class="eyebrow">Crear cuenta</p>
+        <h1>Únete a Mentorly UDD</h1>
+        <p>Regístrate con tu correo institucional para buscar y ofrecer tutorías.</p>
+      </div>
+
+      <form class="auth-form" novalidate (ngSubmit)="submit()">
+        <div class="form-row">
+          <label class="form-field">
+            <span>Nombre</span>
+            <ion-input
+              type="text"
+              name="firstName"
+              fill="outline"
+              autocomplete="given-name"
+              [(ngModel)]="form.firstName"
+              [class.invalid]="isFieldInvalid('firstName')"
+            />
+          </label>
+
+          <label class="form-field">
+            <span>Apellido</span>
+            <ion-input
+              type="text"
+              name="lastName"
+              fill="outline"
+              autocomplete="family-name"
+              [(ngModel)]="form.lastName"
+              [class.invalid]="isFieldInvalid('lastName')"
+            />
+          </label>
+        </div>
+
+        <label class="form-field">
+          <span>Correo UDD</span>
+          <ion-input
+            type="email"
+            name="email"
+            fill="outline"
+            autocomplete="email"
+            placeholder="nombre&#64;udd.cl"
+            [(ngModel)]="form.email"
+            [class.invalid]="isFieldInvalid('email')"
+          />
+        </label>
+
+        <div class="form-row">
+          <label class="form-field">
+            <span>Contraseña</span>
+            <ion-input
+              type="password"
+              name="password"
+              fill="outline"
+              autocomplete="new-password"
+              [(ngModel)]="form.password"
+              [class.invalid]="isFieldInvalid('password')"
+            />
+            @if (isFieldInvalid('password')) {
+              <ion-note color="danger">Mínimo 8 caracteres.</ion-note>
+            }
+          </label>
+
+          <label class="form-field">
+            <span>Confirmar contraseña</span>
+            <ion-input
+              type="password"
+              name="confirmPassword"
+              fill="outline"
+              autocomplete="new-password"
+              [(ngModel)]="form.confirmPassword"
+              [class.invalid]="isFieldInvalid('confirmPassword')"
+            />
+            @if (isFieldInvalid('confirmPassword')) {
+              <ion-note color="danger">Las contraseñas no coinciden.</ion-note>
+            }
+          </label>
+        </div>
+
+        <label class="form-field">
+          <span>Campus</span>
+          <ion-select
+            name="campusId"
+            fill="outline"
+            placeholder="Selecciona tu campus"
+            [(ngModel)]="form.campusId"
+            [class.invalid]="isFieldInvalid('campusId')"
+            (ionChange)="onCampusChange()"
+          >
+            @for (campus of campuses; track campus.id) {
+              <ion-select-option [value]="campus.id">{{ campus.name }}</ion-select-option>
+            }
+          </ion-select>
+        </label>
+
+        <div class="form-row">
+          <label class="form-field">
+            <span>Facultad</span>
+            <ion-select
+              name="facultyId"
+              fill="outline"
+              placeholder="Facultad"
+              [(ngModel)]="form.facultyId"
+              [class.invalid]="isFieldInvalid('facultyId')"
+              [disabled]="!form.campusId"
+              (ionChange)="onFacultyChange()"
+            >
+              @for (faculty of faculties; track faculty.id) {
+                <ion-select-option [value]="faculty.id">{{ faculty.name }}</ion-select-option>
+              }
+            </ion-select>
+          </label>
+
+          <label class="form-field">
+            <span>Carrera</span>
+            <ion-select
+              name="careerId"
+              fill="outline"
+              placeholder="Carrera"
+              [(ngModel)]="form.careerId"
+              [class.invalid]="isFieldInvalid('careerId')"
+              [disabled]="!form.facultyId"
+            >
+              @for (career of careers; track career.id) {
+                <ion-select-option [value]="career.id">{{ career.name }}</ion-select-option>
+              }
+            </ion-select>
+          </label>
+        </div>
+
+        <label class="form-field">
+          <span>Año de Ingreso</span>
+          <ion-input
+            type="text"
+            name="admissionYear"
+            fill="outline"
+            placeholder="Ej: 2023"
+            [(ngModel)]="form.admissionYear"
+            [class.invalid]="isFieldInvalid('admissionYear')"
+          />
+        </label>
+
+        <ion-item class="wants-to-teach-item" lines="none">
+          <ion-checkbox
+            name="wantsToTeach"
+            labelPlacement="end"
+            justify="start"
+            [(ngModel)]="form.wantsToTeach"
+          >
+            También quiero ofrecer tutorías.
+          </ion-checkbox>
+        </ion-item>
+
+        @if (hasFormErrors) {
+          <ion-note color="danger" class="form-error">
+            Completa todos los campos, selecciona tu carrera y usa un correo institucional &#64;udd.cl.
+          </ion-note>
+        }
+
+        <ion-button
+          type="submit"
+          expand="block"
+          class="submit-button"
+          [disabled]="isRegistering"
+        >
+          {{ isRegistering ? 'Creando cuenta...' : 'Crear cuenta' }}
+        </ion-button>
+      </form>
+
+      <p class="auth-footer">
+        ¿Ya tienes cuenta? <a routerLink="/login">Inicia sesión</a>
+      </p>
+    </section>
+  </main>
+</ion-content>

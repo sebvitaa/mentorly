@@ -180,7 +180,7 @@ export class ScheduleCalendarComponent implements OnInit {
         hour,
         student_first_name: this.bookingForm.firstName.trim(),
         student_last_name: this.bookingForm.lastName.trim(),
-        student_current_year: this.bookingForm.currentYear.trim(),
+        student_admission_year: this.bookingForm.admissionYear.trim(),
         student_email: this.bookingForm.email.trim(),
         student_campus_id: this.bookingForm.campusId,
         student_faculty_id: this.bookingForm.facultyId,
@@ -199,7 +199,7 @@ export class ScheduleCalendarComponent implements OnInit {
             studentFirstName: booking.student_first_name,
             studentLastName: booking.student_last_name,
             studentEmail: booking.student_email,
-            currentYear: booking.student_current_year,
+            admissionYear: booking.student_admission_year,
             campusId: booking.student_campus_id,
             campusName: campus?.name ?? '',
             facultyId: booking.student_faculty_id,
@@ -258,7 +258,7 @@ export class ScheduleCalendarComponent implements OnInit {
       this.isFieldInvalid('campusId') ||
       this.isFieldInvalid('facultyId') ||
       this.isFieldInvalid('careerId') ||
-      this.isFieldInvalid('currentYear') ||
+      this.isFieldInvalid('admissionYear') ||
       this.isFieldInvalid('email')
     );
   }
@@ -274,7 +274,7 @@ export class ScheduleCalendarComponent implements OnInit {
       !!this.bookingForm.campusId &&
       !!this.bookingForm.facultyId &&
       !!this.bookingForm.careerId &&
-      !!this.bookingForm.currentYear.trim() &&
+      !!this.bookingForm.admissionYear.trim() &&
       this.isUddEmail(this.bookingForm.email.trim()) &&
       this.integrityAccepted
     );
@@ -300,7 +300,7 @@ export class ScheduleCalendarComponent implements OnInit {
       campusId: '',
       facultyId: '',
       careerId: '',
-      currentYear: '',
+      admissionYear: '',
       email: '',
       message: '',
     };
@@ -326,7 +326,7 @@ interface BookingRequestForm {
   campusId: string;
   facultyId: string;
   careerId: string;
-  currentYear: string;
+  admissionYear: string;
   email: string;
   message: string;
 }

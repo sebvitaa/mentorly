@@ -5,7 +5,7 @@ export interface CreateBookingDto {
   hour: string;
   student_first_name: string;
   student_last_name: string;
-  student_current_year: string;
+  student_admission_year: string;
   student_email: string;
   student_campus_id: string;
   student_faculty_id: string;
@@ -31,7 +31,7 @@ export interface BookingDto {
   hour: string;
   student_first_name: string;
   student_last_name: string;
-  student_current_year: string;
+  student_admission_year: string;
   student_email: string;
   student_campus_id: string;
   student_faculty_id: string;

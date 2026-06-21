@@ -1,0 +1,128 @@
+.auth-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100%;
+  padding: 40px 24px;
+  --background: var(--brand-surface);
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 480px;
+  background: var(--brand-surface);
+  border: 2px solid var(--brand-ink);
+  border-radius: 12px;
+  padding: 32px;
+}
+
+.auth-header {
+  margin-bottom: 28px;
+
+  .eyebrow {
+    font-family: var(--app-font);
+    font-weight: 800;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--brand-primary);
+    margin: 0 0 8px;
+  }
+
+  h1 {
+    font-family: var(--app-font);
+    font-weight: 800;
+    font-size: clamp(28px, 5vw, 40px);
+    color: var(--brand-ink);
+    margin: 0 0 8px;
+  }
+
+  p {
+    font-family: var(--app-font);
+    font-size: 16px;
+    line-height: 1.5;
+    color: var(--brand-muted);
+    margin: 0;
+  }
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-family: var(--app-font);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--brand-ink);
+
+  ion-input {
+    width: 100%;
+    font: inherit;
+    font-weight: 500;
+    color: var(--brand-ink);
+    --background: var(--brand-surface);
+    --border-color: var(--brand-ink);
+    --border-radius: 6px;
+    --border-width: 2px;
+    --highlight-color-focused: var(--brand-primary);
+    --padding-start: 12px;
+    --padding-end: 12px;
+
+    &.invalid {
+      --background: #fef2f2;
+      --border-color: #dc2626;
+    }
+  }
+}
+
+.form-error {
+  font-family: var(--app-font);
+  font-size: 13px;
+  font-weight: 600;
+  color: #b91c1c;
+  margin: 0;
+}
+
+.submit-button {
+  width: 100%;
+  font-family: var(--app-font);
+  font-weight: 700;
+  font-size: 16px;
+  margin-top: 8px;
+  --background: var(--brand-primary);
+  --background-hover: var(--brand-primary-hover);
+  --border-color: var(--brand-ink);
+  --border-radius: 6px;
+  --border-style: solid;
+  --border-width: 2px;
+  --box-shadow: none;
+}
+
+.auth-footer {
+  font-family: var(--app-font);
+  text-align: center;
+  color: var(--brand-muted);
+  margin: 24px 0 0;
+
+  a {
+    color: var(--brand-primary);
+    font-weight: 700;
+    text-decoration: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .auth-page {
+    padding: 24px 16px;
+  }
+
+  .auth-card {
+    padding: 24px;
+  }
+}

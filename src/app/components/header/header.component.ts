@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Component, inject } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
+import { AsyncPipe } from '@angular/common';
 import {
   IonButton,
   IonButtons,
@@ -8,21 +9,24 @@ import {
   IonToolbar,
 } from '@ionic/angular/standalone';
 
+import { AuthService } from '../../services/auth.service';
+
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [IonButton, IonButtons, IonHeader, IonTitle, IonToolbar, RouterLink],
-  template: `
-    <ion-header class="app-header">
-      <ion-toolbar>
-        <ion-title class="logo">Mentorly UDD</ion-title>
-        <ion-buttons slot="end">
-          <ion-button routerLink="/home">Inicio</ion-button>
-          <ion-button routerLink="/requests">Mis solicitudes</ion-button>
-        </ion-buttons>
-      </ion-toolbar>
-    </ion-header>
-  `,
+  imports: [IonButton, IonButtons, IonHeader, IonTitle, IonToolbar, RouterLink, AsyncPipe],
+  templateUrl: './header.component.html',
   styleUrl: './header.component.scss',
 })
-export class HeaderComponent {}
+export class HeaderComponent {
+  private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
+
+  readonly user$ = this.authService.user$;
+
+  async logout(): Promise<void> {
+    this.authService.logout().subscribe(async () => {
+      await this.router.navigate(['/home']);
+    });
+  }
+}

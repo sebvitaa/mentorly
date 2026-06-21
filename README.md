@@ -45,6 +45,8 @@ y agendar una hora desde un calendario de disponibilidad.
 - **Catálogo académico UDD**: al agendar, el estudiante selecciona su campus,
   facultad y carrera a través de selects dependientes, garantizando datos
   normalizados.
+- **Registro e inicio de sesión** con correo institucional UDD. Una misma cuenta
+  puede ser estudiante y, opcionalmente, tutor.
 - **Historial local** de solicitudes y tutores favoritos en `/requests`,
   persistido con `localStorage`.
 - **Uso responsable**: el formulario exige aceptar que la tutoría es para
@@ -213,6 +215,10 @@ Endpoints disponibles:
 | Método | Ruta | Uso |
 |--------|------|-----|
 | `GET` | `/api/health` | Healthcheck de la mock API. |
+| `POST` | `/api/auth/register` | Crea una cuenta estudiante/tutor. |
+| `POST` | `/api/auth/login` | Inicia sesión. |
+| `POST` | `/api/auth/logout` | Cierra sesión. |
+| `GET` | `/api/auth/me` | Usuario autenticado. |
 | `GET` | `/api/campuses` | Campus UDD disponibles. |
 | `GET` | `/api/faculties` | Facultades por campus (`?campus_id=...`). |
 | `GET` | `/api/careers` | Carreras por facultad y campus (`?faculty_id=...&campus_id=...`). |
@@ -236,7 +242,7 @@ Body mínimo para crear una reserva:
   "hour": "10:00",
   "student_first_name": "Josefa",
   "student_last_name": "Perez",
-  "student_current_year": "2do ano",
+  "student_admission_year": "2023",
   "student_email": "josefa.perez@udd.cl",
   "student_campus_id": "campus-stgo",
   "student_faculty_id": "fac-economia-negocios-stgo",

@@ -144,14 +144,14 @@
 
               <div class="booking-form-grid">
                 <label class="booking-field">
-                  <span>Año cursando</span>
+                  <span>Año de Ingreso</span>
                   <ion-input
                     type="text"
-                    name="currentYear"
+                    name="admissionYear"
                     fill="outline"
-                    placeholder="Ej: 3er año"
-                    [(ngModel)]="bookingForm.currentYear"
-                    [class.invalid]="isFieldInvalid('currentYear')"
+                    placeholder="Ej: 2023"
+                    [(ngModel)]="bookingForm.admissionYear"
+                    [class.invalid]="isFieldInvalid('admissionYear')"
                   />
                 </label>
 

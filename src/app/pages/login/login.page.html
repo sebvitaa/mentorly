@@ -1,0 +1,57 @@
+<ion-content [fullscreen]="true">
+  <main class="auth-page">
+    <section class="auth-card">
+      <div class="auth-header">
+        <p class="eyebrow">Iniciar sesión</p>
+        <h1>Bienvenido de vuelta</h1>
+        <p>Ingresa con tu correo institucional UDD.</p>
+      </div>
+
+      <form class="auth-form" novalidate (ngSubmit)="submit()">
+        <label class="form-field">
+          <span>Correo UDD</span>
+          <ion-input
+            type="email"
+            name="email"
+            fill="outline"
+            autocomplete="email"
+            placeholder="nombre&#64;udd.cl"
+            [(ngModel)]="form.email"
+            [class.invalid]="isFieldInvalid('email')"
+          />
+        </label>
+
+        <label class="form-field">
+          <span>Contraseña</span>
+          <ion-input
+            type="password"
+            name="password"
+            fill="outline"
+            autocomplete="current-password"
+            [(ngModel)]="form.password"
+            [class.invalid]="isFieldInvalid('password')"
+          />
+        </label>
+
+        @if (hasFormErrors) {
+          <ion-note color="danger" class="form-error">
+            Ingresa un correo institucional &#64;udd.cl y tu contraseña.
+          </ion-note>
+        }
+
+        <ion-button
+          type="submit"
+          expand="block"
+          class="submit-button"
+          [disabled]="isLoggingIn"
+        >
+          {{ isLoggingIn ? 'Iniciando sesión...' : 'Iniciar sesión' }}
+        </ion-button>
+      </form>
+
+      <p class="auth-footer">
+        ¿No tienes cuenta? <a routerLink="/register">Crea una cuenta</a>
+      </p>
+    </section>
+  </main>
+</ion-content>
