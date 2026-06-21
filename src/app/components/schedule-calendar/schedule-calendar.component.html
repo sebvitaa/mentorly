@@ -18,6 +18,14 @@
 
   @if (isOpen) {
     <div class="dropdown">
+      @if (!isAuthenticated) {
+        <div class="login-required">
+          <p>Para agendar una hora, inicia sesión:</p>
+          <ion-button expand="block" routerLink="/login">
+            Iniciar sesión
+          </ion-button>
+        </div>
+      } @else {
       <div class="calendar-grid">
         @for (dateString of allDates; track dateString) {
           @let day = dayFor(dateString);
@@ -144,14 +152,14 @@
 
               <div class="booking-form-grid">
                 <label class="booking-field">
-                  <span>Año cursando</span>
+                  <span>Año de Ingreso</span>
                   <ion-input
                     type="text"
-                    name="currentYear"
+                    name="admissionYear"
                     fill="outline"
-                    placeholder="Ej: 3er año"
-                    [(ngModel)]="bookingForm.currentYear"
-                    [class.invalid]="isFieldInvalid('currentYear')"
+                    placeholder="Ej: 2023"
+                    [(ngModel)]="bookingForm.admissionYear"
+                    [class.invalid]="isFieldInvalid('admissionYear')"
                   />
                 </label>
 
@@ -215,6 +223,7 @@
             </form>
           }
         </div>
+      }
       }
     </div>
   }

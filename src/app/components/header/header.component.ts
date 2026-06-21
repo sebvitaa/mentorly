@@ -1,5 +1,5 @@
-import { Component } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Component, computed, inject } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
 import {
   IonButton,
   IonButtons,
@@ -8,21 +8,28 @@ import {
   IonToolbar,
 } from '@ionic/angular/standalone';
 
+import { AuthService } from '../../services/auth.service';
+
 @Component({
   selector: 'app-header',
   standalone: true,
   imports: [IonButton, IonButtons, IonHeader, IonTitle, IonToolbar, RouterLink],
-  template: `
-    <ion-header class="app-header">
-      <ion-toolbar>
-        <ion-title class="logo">Mentorly UDD</ion-title>
-        <ion-buttons slot="end">
-          <ion-button routerLink="/home">Inicio</ion-button>
-          <ion-button routerLink="/requests">Mis solicitudes</ion-button>
-        </ion-buttons>
-      </ion-toolbar>
-    </ion-header>
-  `,
+  templateUrl: './header.component.html',
   styleUrl: './header.component.scss',
 })
-export class HeaderComponent {}
+export class HeaderComponent {
+  private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
+
+  /** Usuario actual (signal) y su nombre para mostrar. */
+  readonly user = this.authService.user;
+  readonly displayName = computed(() => {
+    const metadata = this.user()?.user_metadata ?? {};
+    return (metadata['full_name'] as string | undefined)?.trim() || 'Mi cuenta';
+  });
+
+  async logout(): Promise<void> {
+    await this.authService.signOut();
+    await this.router.navigate(['/home']);
+  }
+}

@@ -6,9 +6,22 @@
 /dist
 /out-tsc
 
+# Test output
+/coverage
+
 # Angular cache
 /.angular/cache
 
 # Misc
 *.log
 .DS_Store
+# Added by code-review-graph
+.code-review-graph/
+
+# code-review-graph local config (machine-specific paths, regenerable via `init`)
+.mcp.json
+.claude/
+CLAUDE.md
+TODO.md
+
+

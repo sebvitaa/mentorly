@@ -3,6 +3,7 @@ import { AuthSession, User } from '@supabase/supabase-js';
 
 import { environment } from '../../environments/environment';
 import { SupabaseService } from './supabase.service';
+import { RateLimitError, RateLimiter } from '../utils/rate-limiter';
 
 /** Datos que el usuario entrega al registrarse. */
 export interface SignUpData {
@@ -20,9 +21,19 @@ export interface SignUpData {
  * Por ahora solo email/contraseña (environment.auth.emailPassword). El acceso
  * institucional UDD está listo pero desactivado (environment.auth.uddSso).
  */
+/** Un intento de login o registro cada 10 segundos. */
+const AUTH_RATE_LIMIT_MS = 10_000;
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly supabase = inject(SupabaseService).client;
+
+  /**
+   * Limitador del lado del cliente: 1 intento cada 10 s para login y para
+   * registro (claves independientes). Es una barrera de UX/anti-spam; el
+   * control de seguridad real lo aplica Supabase en el servidor.
+   */
+  private readonly rateLimiter = new RateLimiter(AUTH_RATE_LIMIT_MS);
 
   /** Sesión y usuario actuales, reactivos (signals). */
   readonly session = signal<AuthSession | null>(null);
@@ -52,6 +63,8 @@ export class AuthService {
    * `handle_new_user` los usa para crear la fila en `profiles`.
    */
   signUp(data: SignUpData) {
+    this.enforceRateLimit('signup');
+
     return this.supabase.auth.signUp({
       email: data.email,
       password: data.password,
@@ -67,7 +80,25 @@ export class AuthService {
 
   /** Inicio de sesión con correo y contraseña. */
   signIn(email: string, password: string) {
+    this.enforceRateLimit('login');
+
     return this.supabase.auth.signInWithPassword({ email, password });
+  }
+
+  /**
+   * Aplica el límite de frecuencia a una acción de autenticación.
+   * Lanza {@link RateLimitError} si todavía no pasó el tiempo mínimo; en caso
+   * contrario, registra el intento. Cuenta tanto intentos exitosos como
+   * fallidos, de modo que un error de credenciales no permite reintentar al
+   * instante.
+   */
+  private enforceRateLimit(action: 'login' | 'signup'): void {
+    const retryAfter = this.rateLimiter.retryAfter(action);
+    if (retryAfter > 0) {
+      throw new RateLimitError(retryAfter);
+    }
+
+    this.rateLimiter.tryAcquire(action);
   }
 
   /** Cierra la sesión actual. */

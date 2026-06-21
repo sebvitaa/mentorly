@@ -10,7 +10,7 @@ export interface LocalRequest {
   studentFirstName: string;
   studentLastName: string;
   studentEmail: string;
-  currentYear: string;
+  admissionYear: string;
   campusId: string;
   campusName: string;
   facultyId: string;

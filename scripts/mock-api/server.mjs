@@ -191,6 +191,10 @@ const teachers = teacherSeeds.map((teacher, index) => ({
 const bookings = [];
 const notifications = [];
 
+// In-memory auth storage. Passwords are NOT securely hashed (mock only).
+const users = [];
+const tokens = new Map();
+
 const server = createServer(async (request, response) => {
   const url = new URL(request.url ?? '/', `http://${request.headers.host}`);
 
@@ -201,6 +205,22 @@ const server = createServer(async (request, response) => {
   try {
     if (url.pathname === `${API_PREFIX}/health` && request.method === 'GET') {
       return sendJson(response, { ok: true, service: 'mentorly-mock-api' });
+    }
+
+    if (url.pathname === `${API_PREFIX}/auth/register` && request.method === 'POST') {
+      return handleRegister(request, response);
+    }
+
+    if (url.pathname === `${API_PREFIX}/auth/login` && request.method === 'POST') {
+      return handleLogin(request, response);
+    }
+
+    if (url.pathname === `${API_PREFIX}/auth/logout` && request.method === 'POST') {
+      return handleLogout(request, response);
+    }
+
+    if (url.pathname === `${API_PREFIX}/auth/me` && request.method === 'GET') {
+      return handleMe(request, response);
     }
 
     if (url.pathname === `${API_PREFIX}/campuses` && request.method === 'GET') {
@@ -361,6 +381,193 @@ function filterTeachers(url) {
   });
 }
 
+async function handleRegister(request, response) {
+  const body = await readJson(request);
+  const {
+    first_name: firstName,
+    last_name: lastName,
+    email,
+    password,
+    campus_id: campusId,
+    faculty_id: facultyId,
+    career_id: careerId,
+    admission_year: admissionYear,
+    wants_to_teach: wantsToTeach,
+  } = body;
+
+  if (
+    !firstName?.trim() ||
+    !lastName?.trim() ||
+    !email?.trim() ||
+    !password ||
+    !campusId ||
+    !facultyId ||
+    !careerId ||
+    !admissionYear?.trim()
+  ) {
+    return sendError(
+      response,
+      422,
+      'VALIDATION_ERROR',
+      'first_name, last_name, email, password, campus_id, faculty_id, career_id and admission_year are required'
+    );
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+
+  if (!isUddEmail(normalizedEmail)) {
+    return sendError(
+      response,
+      422,
+      'INVALID_UDD_EMAIL',
+      'Email must belong to the UDD institutional domain.'
+    );
+  }
+
+  if (!isValidPassword(password)) {
+    return sendError(
+      response,
+      422,
+      'INVALID_PASSWORD',
+      'Password must be at least 8 characters long.'
+    );
+  }
+
+  if (users.some((user) => user.email === normalizedEmail)) {
+    return sendError(response, 409, 'EMAIL_ALREADY_REGISTERED', 'This email is already registered.');
+  }
+
+  const career = careers.find(
+    (item) =>
+      item.id === careerId &&
+      item.campus_id === campusId &&
+      item.faculty_id === facultyId &&
+      item.active
+  );
+
+  if (!career) {
+    return sendError(
+      response,
+      422,
+      'INVALID_ACADEMIC_SELECTION',
+      'The selected campus, faculty and career combination is not valid.'
+    );
+  }
+
+  const now = new Date().toISOString();
+  const roles = ['student'];
+  if (wantsToTeach === true) {
+    roles.push('tutor');
+  }
+
+  const user = {
+    email: normalizedEmail,
+    first_name: firstName.trim(),
+    last_name: lastName.trim(),
+    campus_id: campusId,
+    faculty_id: facultyId,
+    career_id: careerId,
+    admission_year: admissionYear.trim(),
+    roles,
+    password_hash: hashPassword(password),
+    created_at: now,
+    updated_at: now,
+  };
+
+  users.push(user);
+
+  const accessToken = randomUUID();
+  tokens.set(accessToken, user.email);
+
+  return sendJson(response, buildAuthResponse(user, accessToken), 201);
+}
+
+async function handleLogin(request, response) {
+  const body = await readJson(request);
+  const { email, password } = body;
+
+  if (!email?.trim() || !password) {
+    return sendError(response, 422, 'VALIDATION_ERROR', 'email and password are required');
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+  const user = users.find((item) => item.email === normalizedEmail);
+
+  if (!user || user.password_hash !== hashPassword(password)) {
+    return sendError(response, 401, 'INVALID_CREDENTIALS', 'Invalid email or password.');
+  }
+
+  const accessToken = randomUUID();
+  tokens.set(accessToken, user.email);
+
+  return sendJson(response, buildAuthResponse(user, accessToken));
+}
+
+async function handleLogout(request, response) {
+  const token = extractBearerToken(request);
+  if (token) {
+    tokens.delete(token);
+  }
+  return sendNoContent(response);
+}
+
+async function handleMe(request, response) {
+  const user = getAuthenticatedUser(request);
+  if (!user) {
+    return sendError(response, 401, 'UNAUTHENTICATED', 'Valid access token required.');
+  }
+  return sendJson(response, buildUserResponse(user));
+}
+
+function getAuthenticatedUser(request) {
+  const token = extractBearerToken(request);
+  if (!token) {
+    return null;
+  }
+  const email = tokens.get(token);
+  if (!email) {
+    return null;
+  }
+  return users.find((user) => user.email === email) ?? null;
+}
+
+function extractBearerToken(request) {
+  const authHeader = request.headers.authorization ?? '';
+  const match = authHeader.match(/^Bearer\s+(.+)$/i);
+  return match ? match[1] : null;
+}
+
+function buildUserResponse(user) {
+  return {
+    email: user.email,
+    first_name: user.first_name,
+    last_name: user.last_name,
+    campus_id: user.campus_id,
+    faculty_id: user.faculty_id,
+    career_id: user.career_id,
+    admission_year: user.admission_year,
+    roles: user.roles,
+    created_at: user.created_at,
+    updated_at: user.updated_at,
+  };
+}
+
+function buildAuthResponse(user, accessToken) {
+  return {
+    access_token: accessToken,
+    user: buildUserResponse(user),
+  };
+}
+
+function isValidPassword(password) {
+  return typeof password === 'string' && password.length >= 8;
+}
+
+function hashPassword(password) {
+  // Mock-only: NOT secure. Real backend must use bcrypt/argon2.
+  return Buffer.from(password).toString('base64');
+}
+
 async function createBooking(request, response) {
   const body = await readJson(request);
   const teacherId = body.teacher_id ?? body.teacherId;
@@ -369,7 +576,7 @@ async function createBooking(request, response) {
     hour,
     student_first_name: studentFirstName,
     student_last_name: studentLastName,
-    student_current_year: studentCurrentYear,
+    student_admission_year: studentAdmissionYear,
     student_email: studentEmail,
     student_campus_id: studentCampusId,
     student_faculty_id: studentFacultyId,
@@ -383,7 +590,7 @@ async function createBooking(request, response) {
     !hour ||
     !studentFirstName ||
     !studentLastName ||
-    !studentCurrentYear ||
+    !studentAdmissionYear ||
     !studentEmail ||
     !studentCampusId ||
     !studentFacultyId ||
@@ -464,7 +671,7 @@ async function createBooking(request, response) {
     hour,
     student_first_name: studentFirstName,
     student_last_name: studentLastName,
-    student_current_year: studentCurrentYear,
+    student_admission_year: studentAdmissionYear,
     student_email: studentEmail,
     student_campus_id: studentCampusId,
     student_faculty_id: studentFacultyId,
@@ -670,7 +877,7 @@ function corsHeaders(extraHeaders = {}) {
   return {
     'access-control-allow-origin': '*',
     'access-control-allow-methods': 'GET,POST,PATCH,OPTIONS',
-    'access-control-allow-headers': 'content-type',
+    'access-control-allow-headers': 'content-type,authorization',
     ...extraHeaders,
   };
 }

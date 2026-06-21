@@ -1,0 +1,19 @@
+<ion-header class="app-header">
+  <ion-toolbar>
+    <ion-title class="logo" routerLink="/home">Mentorly UDD</ion-title>
+    <ion-buttons slot="end">
+      <ion-button routerLink="/home">Inicio</ion-button>
+      <ion-button routerLink="/requests">Mis solicitudes</ion-button>
+
+      @if (user(); as user) {
+        <ion-button class="user-button" disabled="true">
+          {{ displayName() }}
+        </ion-button>
+        <ion-button (click)="logout()">Cerrar sesión</ion-button>
+      } @else {
+        <ion-button routerLink="/login">Iniciar sesión</ion-button>
+        <ion-button routerLink="/register">Crear cuenta</ion-button>
+      }
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
