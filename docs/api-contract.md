@@ -798,8 +798,22 @@ Codigos de negocio sugeridos:
 - Una reserva confirmada debe gatillar una notificacion.
 - No se puede aceptar una reserva si el bloque horario ya fue tomado por otra reserva incompatible.
 - No se debe permitir reservar fechas pasadas.
+- El estudiante debe aceptar una regla de integridad academica antes de solicitar una tutoría: el apoyo es para reforzamiento y no para resolver evaluaciones, tareas o trabajos por el estudiante.
 
-## 11. Mock API Local
+## 11. Persistencia Local del MVP
+
+El MVP puede usar `localStorage` para complementar la API simulada con trazabilidad simple del navegador.
+
+Claves actuales:
+
+| Clave | Uso |
+|-------|-----|
+| `mentorly:requests` | Historial local de solicitudes enviadas. |
+| `mentorly:favorites` | Tutores guardados como favoritos. |
+
+Esta persistencia no reemplaza al backend real. En produccion, solicitudes y favoritos deberian persistirse por usuario autenticado.
+
+## 12. Mock API Local
 
 La mock API local vive en:
 
@@ -847,7 +861,7 @@ Diferencias con backend real esperado:
 - El frontend oculta el contacto antes de la confirmacion, pero la mock API no valida permisos reales para exponerlo.
 - No implementa administracion real de tutores o ramos.
 
-## 12. Pendientes
+## 13. Pendientes
 
 - Definir proveedor de autenticacion.
 - Definir si los endpoints de tutores seran publicos o requeriran login.

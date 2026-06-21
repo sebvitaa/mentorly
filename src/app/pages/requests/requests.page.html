@@ -1,0 +1,137 @@
+<app-header />
+
+<ion-content [fullscreen]="true">
+  <main class="requests-page">
+    <section class="page-hero">
+      <p class="eyebrow">Seguimiento local</p>
+      <h2>Mis solicitudes y favoritos</h2>
+      <p>
+        Revisa las tutorías solicitadas y conserva a mano los perfiles que más
+        te interesan. Esta información se guarda en este navegador.
+      </p>
+    </section>
+
+    <section class="section-block">
+      <div class="section-heading">
+        <h3>Mis solicitudes</h3>
+        <ion-chip color="primary">{{ requests.length }} registradas</ion-chip>
+      </div>
+
+      @if (requests.length === 0) {
+        <ion-card class="empty-card">
+          <ion-card-content>
+            <ion-text color="medium">
+              Aún no has enviado solicitudes. Busca un tutor y envía una
+              solicitud para verla aquí.
+            </ion-text>
+          </ion-card-content>
+        </ion-card>
+      } @else {
+        <ion-list class="request-list">
+          @for (request of requests; track request.id) {
+            <ion-card class="request-card">
+              <ion-card-header>
+                <div class="card-title-row">
+                  <ion-card-title>{{ request.teacherName }}</ion-card-title>
+                  <ion-badge [color]="statusColor(request.status)">
+                    {{ statusLabel(request.status) }}
+                  </ion-badge>
+                </div>
+              </ion-card-header>
+
+              <ion-card-content>
+                <ion-list lines="none">
+                  <ion-item>
+                    <ion-label>
+                      <strong>Fecha</strong>
+                      <p>{{ formatFullDate(request.date) }} a las {{ request.hour }}</p>
+                    </ion-label>
+                  </ion-item>
+                  <ion-item>
+                    <ion-label>
+                      <strong>Estudiante</strong>
+                      <p>
+                        {{ request.studentFirstName }} {{ request.studentLastName }} ·
+                        {{ request.career }} · {{ request.currentYear }}
+                      </p>
+                    </ion-label>
+                  </ion-item>
+                  <ion-item>
+                    <ion-label>
+                      <strong>Correo</strong>
+                      <p>{{ request.studentEmail }}</p>
+                    </ion-label>
+                  </ion-item>
+                  @if (request.message) {
+                    <ion-item>
+                      <ion-label>
+                        <strong>Mensaje</strong>
+                        <p>{{ request.message }}</p>
+                      </ion-label>
+                    </ion-item>
+                  }
+                </ion-list>
+
+                @if (request.status === 'pending') {
+                  <ion-button
+                    color="danger"
+                    fill="outline"
+                    expand="block"
+                    [disabled]="cancellingId === request.id"
+                    (click)="cancelRequest(request)"
+                  >
+                    {{ cancellingId === request.id ? 'Cancelando...' : 'Cancelar solicitud' }}
+                  </ion-button>
+                }
+              </ion-card-content>
+            </ion-card>
+          }
+        </ion-list>
+      }
+    </section>
+
+    <section class="section-block">
+      <div class="section-heading">
+        <h3>Tutores favoritos</h3>
+        <ion-chip color="primary">{{ favorites.length }} guardados</ion-chip>
+      </div>
+
+      @if (favorites.length === 0) {
+        <ion-card class="empty-card">
+          <ion-card-content>
+            <ion-text color="medium">
+              Guarda tutores desde su perfil para compararlos más tarde.
+            </ion-text>
+          </ion-card-content>
+        </ion-card>
+      } @else {
+        <div class="favorites-grid">
+          @for (teacher of favorites; track teacher.id) {
+            <ion-card class="favorite-card">
+              <ion-card-header>
+                <ion-card-title>{{ teacher.name }}</ion-card-title>
+              </ion-card-header>
+              <ion-card-content>
+                <p class="favorite-career">{{ teacher.career }}</p>
+                <p class="favorite-price">{{ teacher.priceRange }}</p>
+                <div class="chips">
+                  @for (subject of teacher.subjects.slice(0, 3); track subject) {
+                    <ion-chip color="primary">{{ subject }}</ion-chip>
+                  }
+                </div>
+                <ion-button
+                  color="medium"
+                  fill="outline"
+                  expand="block"
+                  (click)="removeFavorite(teacher.id)"
+                >
+                  Quitar favorito
+                </ion-button>
+              </ion-card-content>
+            </ion-card>
+          }
+        </div>
+      }
+    </section>
+  </main>
+</ion-content>

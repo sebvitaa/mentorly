@@ -38,12 +38,16 @@ y agendar una hora desde un calendario de disponibilidad.
   Química).
 - **Estados de carga** con _skeletons_ y un **estado vacío** cuando no hay
   resultados.
-- **Ficha de profesor** en un modal: biografía, ramos, contacto preferido,
-  rango de precios y reseñas de estudiantes.
+- **Ficha de profesor** en un modal: biografía, ramos, rango de precios,
+  reseñas y botón para guardar favoritos.
 - **Agendamiento**: calendario de dos semanas con horas disponibles y
-  confirmación mediante _toast_.
-- **Contacto directo**: el botón _Contactar_ abre `mailto:` o `tel:` según la
-  preferencia del profesor.
+  solicitud pendiente de confirmación por el tutor.
+- **Historial local** de solicitudes y tutores favoritos en `/requests`,
+  persistido con `localStorage`.
+- **Uso responsable**: el formulario exige aceptar que la tutoría es para
+  reforzamiento académico y no para resolver evaluaciones.
+- **Contacto protegido**: el contacto del tutor se oculta hasta que la solicitud
+  sea confirmada.
 - **Funciona offline**: si no hay backend configurado o falla, la app usa datos
   mock locales automáticamente.
 
@@ -111,12 +115,10 @@ TAWM_01/
     └── app/
         ├── app.component.ts    # Shell raíz (ion-app + router-outlet)
         ├── app.routes.ts       # Rutas (lazy load de la home)
-        ├── models/
-        │   └── teacher.model.ts        # Interfaces de dominio
+        ├── models/                     # Interfaces de dominio y persistencia local
         ├── data/
         │   └── mock-teachers.ts        # Datos mock (fallback offline)
-        ├── services/
-        │   └── teacher.service.ts      # Carga, cacheo y filtrado de profesores
+        ├── services/                   # Carga de datos, favoritos e historial local
         ├── utils/
         │   └── format.util.ts          # Helpers de formato compartidos
         ├── components/
@@ -127,7 +129,8 @@ TAWM_01/
         │   ├── teacher-modal/          # Ficha detallada (ion-modal)
         │   └── schedule-calendar/      # Calendario de disponibilidad
         └── pages/
-            └── home/                   # Página que orquesta los componentes
+            ├── home/                   # Página que orquesta búsqueda y perfil
+            └── requests/               # Historial local y favoritos
 ```
 
 ---

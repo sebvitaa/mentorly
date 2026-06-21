@@ -183,17 +183,19 @@
   font-weight: 600;
   color: var(--brand-ink);
 
-  input,
-  textarea {
+  ion-input,
+  ion-textarea {
     width: 100%;
     font: inherit;
     font-weight: 500;
     color: var(--brand-ink);
-    background: var(--brand-surface);
-    border: 2px solid var(--brand-ink);
-    border-radius: 6px;
-    padding: 10px 12px;
-    resize: vertical;
+    --background: var(--brand-surface);
+    --border-color: var(--brand-ink);
+    --border-radius: 6px;
+    --border-width: 2px;
+    --highlight-color-focused: var(--brand-primary);
+    --padding-start: 12px;
+    --padding-end: 12px;
 
     &:focus {
       outline: 2px solid var(--brand-primary);
@@ -201,10 +203,21 @@
     }
 
     &.invalid {
-      border-color: #dc2626;
-      background: #fef2f2;
+      --background: #fef2f2;
+      --border-color: #dc2626;
     }
   }
+}
+
+.integrity-item {
+  --background: var(--brand-surface-alt);
+  --border-radius: 6px;
+  --inner-padding-end: 0;
+  border: 1px solid var(--brand-border);
+  border-radius: 6px;
+  color: var(--brand-ink);
+  font-family: var(--app-font);
+  font-weight: 500;
 }
 
 .form-error {
@@ -220,27 +233,18 @@
   font-family: var(--app-font);
   font-weight: 600;
   font-size: 16px;
-  padding: 12px 24px;
-  background: var(--brand-primary);
-  color: #fff;
-  border: 2px solid var(--brand-ink);
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background-color 150ms ease;
   margin-top: 12px;
+  --background: var(--brand-primary);
+  --background-hover: var(--brand-primary-hover);
+  --border-color: var(--brand-ink);
+  --border-radius: 6px;
+  --border-style: solid;
+  --border-width: 2px;
+  --box-shadow: none;
 
-  &:hover {
-    background: var(--brand-primary-hover);
-  }
-
-  &:focus {
-    outline: 2px solid var(--brand-primary);
-    outline-offset: 2px;
-  }
-
-  &:disabled {
-    opacity: 0.65;
-    cursor: wait;
+  &::part(native) {
+    font-family: var(--app-font);
+    font-weight: 600;
   }
 }
 

@@ -36,6 +36,14 @@
             <span class="rating-number">{{ teacher.rating.toFixed(1) }}</span>
             <span class="review-count">({{ teacher.reviewCount }} reseñas)</span>
           </div>
+          <ion-button
+            class="favorite-button"
+            fill="outline"
+            size="small"
+            (click)="toggleFavorite()"
+          >
+            {{ isFavorite() ? 'Quitar favorito' : 'Guardar favorito' }}
+          </ion-button>
         </div>
 
         <section class="section">
@@ -64,6 +72,7 @@
           <h3 class="section-title">Agendar hora</h3>
           <app-schedule-calendar
             [teacherId]="teacher.id"
+            [teacherName]="teacher.name"
             [availability]="teacher.availability"
           />
         </section>

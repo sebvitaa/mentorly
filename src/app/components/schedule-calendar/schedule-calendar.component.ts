@@ -1,9 +1,18 @@
 import { Component, Input, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ToastController } from '@ionic/angular/standalone';
+import {
+  IonButton,
+  IonCheckbox,
+  IonInput,
+  IonItem,
+  IonNote,
+  IonTextarea,
+  ToastController,
+} from '@ionic/angular/standalone';
 
 import { DayAvailability } from '../../models/teacher.model';
 import { BookingApiService } from '../../api/booking-api.service';
+import { RequestHistoryService } from '../../services/request-history.service';
 import {
   formatFullDate,
   getDayName,
@@ -13,16 +22,26 @@ import {
 @Component({
   selector: 'app-schedule-calendar',
   standalone: true,
-  imports: [FormsModule],
+  imports: [
+    FormsModule,
+    IonButton,
+    IonCheckbox,
+    IonInput,
+    IonItem,
+    IonNote,
+    IonTextarea,
+  ],
   templateUrl: './schedule-calendar.component.html',
   styleUrl: './schedule-calendar.component.scss',
 })
 export class ScheduleCalendarComponent implements OnInit {
   @Input({ required: true }) teacherId = '';
+  @Input({ required: true }) teacherName = '';
   @Input() availability: DayAvailability[] = [];
 
   private readonly toastController = inject(ToastController);
   private readonly bookingApi = inject(BookingApiService);
+  private readonly requestHistory = inject(RequestHistoryService);
 
   readonly getDayName = getDayName;
   readonly getDayNumber = getDayNumber;
@@ -34,6 +53,7 @@ export class ScheduleCalendarComponent implements OnInit {
   isBooking = false;
   formSubmitted = false;
   bookingForm = this.createEmptyBookingForm();
+  integrityAccepted = false;
 
   /** Calendar window: every date from today through two weeks out. */
   allDates: string[] = [];
@@ -69,6 +89,7 @@ export class ScheduleCalendarComponent implements OnInit {
       this.selectedDay = null;
       this.selectedTime = null;
       this.formSubmitted = false;
+      this.integrityAccepted = false;
     }
   }
 
@@ -93,7 +114,7 @@ export class ScheduleCalendarComponent implements OnInit {
     this.formSubmitted = true;
     if (!this.isFormValid()) {
       await this.presentToast(
-        'Completa los datos requeridos con un correo institucional @udd.cl.',
+        'Completa los datos requeridos, usa correo @udd.cl y acepta la regla de uso.',
         'danger'
       );
       return;
@@ -116,7 +137,22 @@ export class ScheduleCalendarComponent implements OnInit {
         message: this.bookingForm.message.trim() || null,
       })
       .subscribe({
-        next: async () => {
+        next: async (booking) => {
+          this.requestHistory.saveRequest({
+            id: booking.id,
+            teacherId: booking.teacher_id,
+            teacherName: this.teacherName,
+            date: booking.date,
+            hour: booking.hour,
+            status: booking.status,
+            studentFirstName: booking.student_first_name,
+            studentLastName: booking.student_last_name,
+            studentEmail: booking.student_email,
+            career: booking.student_career,
+            currentYear: booking.student_current_year,
+            message: booking.message,
+            createdAt: booking.created_at,
+          });
           this.markSlotAsUnavailable(date, hour);
           await this.presentToast(
             `Solicitud enviada: ${formatFullDate(date)} a las ${hour}. Queda pendiente de confirmacion del tutor.`,
@@ -127,6 +163,7 @@ export class ScheduleCalendarComponent implements OnInit {
           this.selectedTime = null;
           this.formSubmitted = false;
           this.bookingForm = this.createEmptyBookingForm();
+          this.integrityAccepted = false;
           this.isBooking = false;
         },
         error: async () => {
@@ -166,13 +203,18 @@ export class ScheduleCalendarComponent implements OnInit {
     );
   }
 
+  get isIntegrityInvalid(): boolean {
+    return this.formSubmitted && !this.integrityAccepted;
+  }
+
   private isFormValid(): boolean {
     return (
       !!this.bookingForm.firstName.trim() &&
       !!this.bookingForm.lastName.trim() &&
       !!this.bookingForm.career.trim() &&
       !!this.bookingForm.currentYear.trim() &&
-      this.isUddEmail(this.bookingForm.email.trim())
+      this.isUddEmail(this.bookingForm.email.trim()) &&
+      this.integrityAccepted
     );
   }
 

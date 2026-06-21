@@ -62,9 +62,10 @@
               <div class="booking-form-grid">
                 <label class="booking-field">
                   <span>Nombre</span>
-                  <input
+                  <ion-input
                     type="text"
                     name="firstName"
+                    fill="outline"
                     autocomplete="given-name"
                     [(ngModel)]="bookingForm.firstName"
                     [class.invalid]="isFieldInvalid('firstName')"
@@ -73,9 +74,10 @@
 
                 <label class="booking-field">
                   <span>Apellido</span>
-                  <input
+                  <ion-input
                     type="text"
                     name="lastName"
+                    fill="outline"
                     autocomplete="family-name"
                     [(ngModel)]="bookingForm.lastName"
                     [class.invalid]="isFieldInvalid('lastName')"
@@ -85,9 +87,10 @@
 
               <label class="booking-field">
                 <span>Carrera</span>
-                <input
+                <ion-input
                   type="text"
                   name="career"
+                  fill="outline"
                   autocomplete="organization-title"
                   placeholder="Ej: Ingenieria Comercial"
                   [(ngModel)]="bookingForm.career"
@@ -98,9 +101,10 @@
               <div class="booking-form-grid">
                 <label class="booking-field">
                   <span>Año cursando</span>
-                  <input
+                  <ion-input
                     type="text"
                     name="currentYear"
+                    fill="outline"
                     placeholder="Ej: 3er año"
                     [(ngModel)]="bookingForm.currentYear"
                     [class.invalid]="isFieldInvalid('currentYear')"
@@ -109,9 +113,10 @@
 
                 <label class="booking-field">
                   <span>Correo UDD</span>
-                  <input
+                  <ion-input
                     type="email"
                     name="email"
+                    fill="outline"
                     autocomplete="email"
                     placeholder="nombre&#64;udd.cl"
                     [(ngModel)]="bookingForm.email"
@@ -122,23 +127,47 @@
 
               <label class="booking-field">
                 <span>Mensaje opcional</span>
-                <textarea
+                <ion-textarea
                   name="message"
+                  fill="outline"
                   rows="3"
                   placeholder="Cuéntale al tutor qué necesitas preparar"
                   [(ngModel)]="bookingForm.message"
-                ></textarea>
+                />
               </label>
 
-              @if (hasFormErrors) {
-                <p class="form-error">
-                  Completa todos los campos y usa un correo institucional &#64;udd.cl.
-                </p>
+              <ion-item class="integrity-item" lines="none">
+                <ion-checkbox
+                  name="integrityAccepted"
+                  labelPlacement="end"
+                  justify="start"
+                  [(ngModel)]="integrityAccepted"
+                >
+                  Confirmo que la tutoría es para reforzamiento académico y no
+                  para resolver evaluaciones, tareas o trabajos por mí.
+                </ion-checkbox>
+              </ion-item>
+
+              @if (isIntegrityInvalid) {
+                <ion-note color="danger">
+                  Debes aceptar la regla de uso responsable para enviar la solicitud.
+                </ion-note>
               }
 
-              <button type="submit" class="confirm-button" [disabled]="isBooking">
+              @if (hasFormErrors) {
+                <ion-note color="danger" class="form-error">
+                  Completa todos los campos y usa un correo institucional &#64;udd.cl.
+                </ion-note>
+              }
+
+              <ion-button
+                type="submit"
+                class="confirm-button"
+                expand="block"
+                [disabled]="isBooking"
+              >
                 {{ isBooking ? 'Enviando solicitud...' : 'Enviar solicitud' }}
-              </button>
+              </ion-button>
             </form>
           }
         </div>

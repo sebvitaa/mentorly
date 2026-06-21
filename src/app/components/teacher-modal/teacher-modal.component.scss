@@ -98,6 +98,21 @@ ion-modal.teacher-modal {
   gap: 6px;
 }
 
+.favorite-button {
+  margin-top: 14px;
+  --border-color: var(--brand-ink);
+  --border-radius: 999px;
+  --border-width: 2px;
+  --color: var(--brand-primary);
+  --background-hover: var(--brand-primary-tint);
+  --box-shadow: none;
+
+  &::part(native) {
+    font-family: var(--app-font);
+    font-weight: 700;
+  }
+}
+
 .stars,
 .review-stars {
   display: flex;
