@@ -7,6 +7,7 @@
     "ng": "ng",
     "start": "ng serve",
     "dev": "ng serve",
+    "api": "node scripts/mock-api/server.mjs",
     "build": "ng build",
     "watch": "ng build --watch --configuration development"
   },

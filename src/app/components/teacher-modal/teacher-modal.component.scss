@@ -98,6 +98,21 @@ ion-modal.teacher-modal {
   gap: 6px;
 }
 
+.favorite-button {
+  margin-top: 14px;
+  --border-color: var(--brand-ink);
+  --border-radius: 999px;
+  --border-width: 2px;
+  --color: var(--brand-primary);
+  --background-hover: var(--brand-primary-tint);
+  --box-shadow: none;
+
+  &::part(native) {
+    font-family: var(--app-font);
+    font-weight: 700;
+  }
+}
+
 .stars,
 .review-stars {
   display: flex;
@@ -177,6 +192,18 @@ ion-modal.teacher-modal {
   font-weight: 500;
   font-size: 15px;
   color: var(--brand-ink);
+}
+
+.contact-locked {
+  font-family: var(--app-font);
+  font-weight: 500;
+  font-size: 15px;
+  color: var(--brand-muted);
+  line-height: 1.5;
+  padding: 14px 16px;
+  background: var(--brand-surface-alt);
+  border: 1px solid var(--brand-border);
+  border-radius: 6px;
 }
 
 .contact-button {

@@ -36,6 +36,14 @@
             <span class="rating-number">{{ teacher.rating.toFixed(1) }}</span>
             <span class="review-count">({{ teacher.reviewCount }} reseñas)</span>
           </div>
+          <ion-button
+            class="favorite-button"
+            fill="outline"
+            size="small"
+            (click)="toggleFavorite()"
+          >
+            {{ isFavorite() ? 'Quitar favorito' : 'Guardar favorito' }}
+          </ion-button>
         </div>
 
         <section class="section">
@@ -53,19 +61,20 @@
         </section>
 
         <section class="section">
-          <h3 class="section-title">Contacto preferido</h3>
-          <div class="contact">
-            <span>{{ teacher.contact.type === 'email' ? '📧' : '📱' }}</span>
-            <span>{{ teacher.contact.value }}</span>
+          <h3 class="section-title">Contacto</h3>
+          <div class="contact-locked">
+            El contacto del tutor se habilitara cuando acepte tu solicitud de
+            reserva.
           </div>
-          <button type="button" class="contact-button" (click)="contact()">
-            Contactar
-          </button>
         </section>
 
         <section class="section">
           <h3 class="section-title">Agendar hora</h3>
-          <app-schedule-calendar [availability]="teacher.availability" />
+          <app-schedule-calendar
+            [teacherId]="teacher.id"
+            [teacherName]="teacher.name"
+            [availability]="teacher.availability"
+          />
         </section>
 
         <section class="section">

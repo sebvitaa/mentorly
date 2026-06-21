@@ -58,9 +58,161 @@
               Seleccionado: {{ formatFullDate(selectedDay.date) }} a las
               {{ selectedTime }}
             </div>
-            <button type="button" class="confirm-button" (click)="confirm()">
-              Confirmar
-            </button>
+            <form class="booking-form" novalidate (ngSubmit)="confirm()">
+              <div class="booking-form-grid">
+                <label class="booking-field">
+                  <span>Nombre</span>
+                  <ion-input
+                    type="text"
+                    name="firstName"
+                    fill="outline"
+                    autocomplete="given-name"
+                    [(ngModel)]="bookingForm.firstName"
+                    [class.invalid]="isFieldInvalid('firstName')"
+                  />
+                </label>
+
+                <label class="booking-field">
+                  <span>Apellido</span>
+                  <ion-input
+                    type="text"
+                    name="lastName"
+                    fill="outline"
+                    autocomplete="family-name"
+                    [(ngModel)]="bookingForm.lastName"
+                    [class.invalid]="isFieldInvalid('lastName')"
+                  />
+                </label>
+              </div>
+
+              <label class="booking-field">
+                <span>Campus</span>
+                <ion-select
+                  name="campusId"
+                  fill="outline"
+                  placeholder="Selecciona tu campus"
+                  [(ngModel)]="bookingForm.campusId"
+                  [class.invalid]="isFieldInvalid('campusId')"
+                  (ionChange)="onCampusChange()"
+                >
+                  @for (campus of campuses; track campus.id) {
+                    <ion-select-option [value]="campus.id">
+                      {{ campus.name }}
+                    </ion-select-option>
+                  }
+                </ion-select>
+              </label>
+
+              <div class="booking-form-grid">
+                <label class="booking-field">
+                  <span>Facultad</span>
+                  <ion-select
+                    name="facultyId"
+                    fill="outline"
+                    placeholder="Facultad"
+                    [(ngModel)]="bookingForm.facultyId"
+                    [class.invalid]="isFieldInvalid('facultyId')"
+                    [disabled]="!bookingForm.campusId"
+                    (ionChange)="onFacultyChange()"
+                  >
+                    @for (faculty of faculties; track faculty.id) {
+                      <ion-select-option [value]="faculty.id">
+                        {{ faculty.name }}
+                      </ion-select-option>
+                    }
+                  </ion-select>
+                </label>
+
+                <label class="booking-field">
+                  <span>Carrera</span>
+                  <ion-select
+                    name="careerId"
+                    fill="outline"
+                    placeholder="Carrera"
+                    [(ngModel)]="bookingForm.careerId"
+                    [class.invalid]="isFieldInvalid('careerId')"
+                    [disabled]="!bookingForm.facultyId"
+                  >
+                    @for (career of careers; track career.id) {
+                      <ion-select-option [value]="career.id">
+                        {{ career.name }}
+                      </ion-select-option>
+                    }
+                  </ion-select>
+                </label>
+              </div>
+
+              <div class="booking-form-grid">
+                <label class="booking-field">
+                  <span>Año cursando</span>
+                  <ion-input
+                    type="text"
+                    name="currentYear"
+                    fill="outline"
+                    placeholder="Ej: 3er año"
+                    [(ngModel)]="bookingForm.currentYear"
+                    [class.invalid]="isFieldInvalid('currentYear')"
+                  />
+                </label>
+
+                <label class="booking-field">
+                  <span>Correo UDD</span>
+                  <ion-input
+                    type="email"
+                    name="email"
+                    fill="outline"
+                    autocomplete="email"
+                    placeholder="nombre&#64;udd.cl"
+                    [(ngModel)]="bookingForm.email"
+                    [class.invalid]="isFieldInvalid('email')"
+                  />
+                </label>
+              </div>
+
+              <label class="booking-field">
+                <span>Mensaje opcional</span>
+                <ion-textarea
+                  name="message"
+                  fill="outline"
+                  rows="3"
+                  placeholder="Cuéntale al tutor qué necesitas preparar"
+                  [(ngModel)]="bookingForm.message"
+                />
+              </label>
+
+              <ion-item class="integrity-item" lines="none">
+                <ion-checkbox
+                  name="integrityAccepted"
+                  labelPlacement="end"
+                  justify="start"
+                  [(ngModel)]="integrityAccepted"
+                >
+                  Confirmo que la tutoría es para reforzamiento académico y no
+                  para resolver evaluaciones, tareas o trabajos por mí.
+                </ion-checkbox>
+              </ion-item>
+
+              @if (isIntegrityInvalid) {
+                <ion-note color="danger">
+                  Debes aceptar la regla de uso responsable para enviar la solicitud.
+                </ion-note>
+              }
+
+              @if (hasFormErrors) {
+                <ion-note color="danger" class="form-error">
+                  Completa todos los campos, selecciona tu carrera y usa un correo institucional &#64;udd.cl.
+                </ion-note>
+              }
+
+              <ion-button
+                type="submit"
+                class="confirm-button"
+                expand="block"
+                [disabled]="isBooking"
+              >
+                {{ isBooking ? 'Enviando solicitud...' : 'Enviar solicitud' }}
+              </ion-button>
+            </form>
           }
         </div>
       }

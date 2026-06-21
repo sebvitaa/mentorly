@@ -1,12 +1,18 @@
-.header {
-  position: sticky;
-  top: 0;
-  left: 0;
-  right: 0;
-  background: var(--brand-surface);
+.app-header {
   border-bottom: 2px solid var(--brand-ink);
-  padding: 20px 24px;
-  z-index: 100;
+
+  ion-toolbar {
+    --background: var(--brand-surface);
+    --border-width: 0;
+    --padding-start: 24px;
+    --padding-end: 24px;
+  }
+
+  ion-button {
+    --color: var(--brand-ink);
+    font-family: var(--app-font);
+    font-weight: 700;
+  }
 }
 
 .logo {
@@ -14,5 +20,17 @@
   font-weight: 700;
   font-size: 20px;
   color: var(--brand-primary);
-  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .app-header {
+    ion-toolbar {
+      --padding-start: 12px;
+      --padding-end: 12px;
+    }
+
+    ion-button {
+      font-size: 12px;
+    }
+  }
 }

@@ -38,12 +38,19 @@ y agendar una hora desde un calendario de disponibilidad.
   Química).
 - **Estados de carga** con _skeletons_ y un **estado vacío** cuando no hay
   resultados.
-- **Ficha de profesor** en un modal: biografía, ramos, contacto preferido,
-  rango de precios y reseñas de estudiantes.
+- **Ficha de profesor** en un modal: biografía, ramos, rango de precios,
+  reseñas y botón para guardar favoritos.
 - **Agendamiento**: calendario de dos semanas con horas disponibles y
-  confirmación mediante _toast_.
-- **Contacto directo**: el botón _Contactar_ abre `mailto:` o `tel:` según la
-  preferencia del profesor.
+  solicitud pendiente de confirmación por el tutor.
+- **Catálogo académico UDD**: al agendar, el estudiante selecciona su campus,
+  facultad y carrera a través de selects dependientes, garantizando datos
+  normalizados.
+- **Historial local** de solicitudes y tutores favoritos en `/requests`,
+  persistido con `localStorage`.
+- **Uso responsable**: el formulario exige aceptar que la tutoría es para
+  reforzamiento académico y no para resolver evaluaciones.
+- **Contacto protegido**: el contacto del tutor se oculta hasta que la solicitud
+  sea confirmada.
 - **Funciona offline**: si no hay backend configurado o falla, la app usa datos
   mock locales automáticamente.
 
@@ -81,7 +88,11 @@ npm install
 npm start
 # → http://localhost:4200
 
-# 3. Generar el build de producción (carpeta /www)
+# 3. En otra terminal, levantar la mock API local
+npm run api
+# → http://localhost:3000/api
+
+# 4. Generar el build de producción (carpeta /www)
 npm run build
 ```
 
@@ -107,12 +118,10 @@ TAWM_01/
     └── app/
         ├── app.component.ts    # Shell raíz (ion-app + router-outlet)
         ├── app.routes.ts       # Rutas (lazy load de la home)
-        ├── models/
-        │   └── teacher.model.ts        # Interfaces de dominio
+        ├── models/                     # Interfaces de dominio y persistencia local
         ├── data/
         │   └── mock-teachers.ts        # Datos mock (fallback offline)
-        ├── services/
-        │   └── teacher.service.ts      # Carga, cacheo y filtrado de profesores
+        ├── services/                   # Carga de datos, favoritos e historial local
         ├── utils/
         │   └── format.util.ts          # Helpers de formato compartidos
         ├── components/
@@ -123,7 +132,8 @@ TAWM_01/
         │   ├── teacher-modal/          # Ficha detallada (ion-modal)
         │   └── schedule-calendar/      # Calendario de disponibilidad
         └── pages/
-            └── home/                   # Página que orquesta los componentes
+            ├── home/                   # Página que orquesta búsqueda y perfil
+            └── requests/               # Historial local y favoritos
 ```
 
 ---
@@ -189,21 +199,70 @@ número de día), evitando duplicación.
 
 ---
 
-## Conectar un backend
+## Mock API local y backend
 
-Por defecto la app funciona **sin backend** usando los mocks. Para conectarla a
-una API real, edita `src/environments/environment.ts`:
+En desarrollo la app apunta a una mock API local en `http://localhost:3000/api`.
+Levántala con:
+
+```bash
+npm run api
+```
+
+Endpoints disponibles:
+
+| Método | Ruta | Uso |
+|--------|------|-----|
+| `GET` | `/api/health` | Healthcheck de la mock API. |
+| `GET` | `/api/campuses` | Campus UDD disponibles. |
+| `GET` | `/api/faculties` | Facultades por campus (`?campus_id=...`). |
+| `GET` | `/api/careers` | Carreras por facultad y campus (`?faculty_id=...&campus_id=...`). |
+| `GET` | `/api/teachers` | Listado de tutores. Acepta `q` y `subject`. |
+| `GET` | `/api/teachers/:id` | Detalle de un tutor. |
+| `GET` | `/api/teachers/:id/availability` | Disponibilidad de un tutor. |
+| `GET` | `/api/subjects` | Ramos disponibles. |
+| `GET` | `/api/bookings` | Reservas creadas en memoria. |
+| `POST` | `/api/bookings` | Crea una solicitud `pending` y bloquea el horario. |
+| `PATCH` | `/api/bookings/:id/accept` | Acepta una solicitud. |
+| `PATCH` | `/api/bookings/:id/reject` | Rechaza una solicitud y libera el horario. |
+| `PATCH` | `/api/bookings/:id/cancel` | Cancela una solicitud/reserva y libera el horario. |
+| `GET` | `/api/notifications` | Notificaciones simuladas en memoria. |
+
+Body mínimo para crear una reserva:
+
+```json
+{
+  "teacher_id": "1",
+  "date": "2026-06-20",
+  "hour": "10:00",
+  "student_first_name": "Josefa",
+  "student_last_name": "Perez",
+  "student_current_year": "2do ano",
+  "student_email": "josefa.perez@udd.cl",
+  "student_campus_id": "campus-stgo",
+  "student_faculty_id": "fac-economia-negocios-stgo",
+  "student_career_id": "career-stgo-economia-negocios-ing-comercial"
+}
+```
+
+Las solicitudes quedan en estado `pending`, bloquean temporalmente el horario y
+deben ser aceptadas o rechazadas por la contraparte.
+
+El frontend consume DTOs de API en `snake_case` y los adapta al modelo de UI con
+los mappers de `src/app/api/mappers`, por lo que un backend real puede cambiar
+su formato sin afectar los componentes.
+
+Para conectarla a una API real, edita `src/environments/environment.ts`:
 
 ```ts
 export const environment = {
   production: false,
-  apiUrl: 'https://mi-backend.com/api', // ← URL base de la API
+  apiUrl: 'https://mi-backend.com/api',
+  useMocks: false,
 };
 ```
 
-El servicio hará un `GET` a `${apiUrl}/teachers` esperando un arreglo de objetos
-`Teacher`. Si la respuesta está vacía o la petición falla, se usan los mocks como
-respaldo, por lo que la app nunca queda en blanco.
+Si la API no responde y `useMocks` está activo, la app cae a los mocks locales de
+TypeScript para no quedar en blanco durante desarrollo.
 
 ---
 
@@ -247,6 +306,7 @@ Teacher[] filtrado ──► TeacherGrid ──► TeacherCard
 | Script | Acción |
 |--------|--------|
 | `npm start` / `npm run dev` | Servidor de desarrollo (`ng serve`) en `http://localhost:4200`. |
+| `npm run api` | Mock API local en `http://localhost:3000/api`. |
 | `npm run build` | Build de producción en `/www`. |
 | `npm run watch` | Build en modo watch (desarrollo). |
 | `npm run ng -- <cmd>` | Acceso directo al CLI de Angular. |
