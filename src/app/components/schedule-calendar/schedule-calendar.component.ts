@@ -2,6 +2,7 @@ import { Component, Input, OnInit, inject } from '@angular/core';
 import { ToastController } from '@ionic/angular/standalone';
 
 import { DayAvailability } from '../../models/teacher.model';
+import { BookingApiService } from '../../api/booking-api.service';
 import {
   formatFullDate,
   getDayName,
@@ -15,9 +16,11 @@ import {
   styleUrl: './schedule-calendar.component.scss',
 })
 export class ScheduleCalendarComponent implements OnInit {
+  @Input({ required: true }) teacherId = '';
   @Input() availability: DayAvailability[] = [];
 
   private readonly toastController = inject(ToastController);
+  private readonly bookingApi = inject(BookingApiService);
 
   readonly getDayName = getDayName;
   readonly getDayNumber = getDayNumber;
@@ -26,6 +29,7 @@ export class ScheduleCalendarComponent implements OnInit {
   isOpen = false;
   selectedDay: DayAvailability | null = null;
   selectedTime: string | null = null;
+  isBooking = false;
 
   /** Calendar window: every date from today through two weeks out. */
   allDates: string[] = [];
@@ -76,16 +80,58 @@ export class ScheduleCalendarComponent implements OnInit {
   }
 
   async confirm(): Promise<void> {
-    if (!this.selectedDay || !this.selectedTime) {
+    if (!this.teacherId || !this.selectedDay || !this.selectedTime || this.isBooking) {
       return;
     }
+
+    this.isBooking = true;
+    this.bookingApi
+      .createBooking({
+        teacherId: this.teacherId,
+        date: this.selectedDay.date,
+        hour: this.selectedTime,
+      })
+      .subscribe({
+        next: async () => {
+          this.markSelectedSlotAsUnavailable();
+          await this.presentToast(
+            `Hora confirmada: ${formatFullDate(this.selectedDay!.date)} a las ${this.selectedTime}`,
+            'primary'
+          );
+          this.isOpen = false;
+          this.selectedDay = null;
+          this.selectedTime = null;
+          this.isBooking = false;
+        },
+        error: async () => {
+          await this.presentToast(
+            'No se pudo confirmar la hora. Intenta con otro bloque.',
+            'danger'
+          );
+          this.isBooking = false;
+        },
+      });
+  }
+
+  private markSelectedSlotAsUnavailable(): void {
+    const slot = this.selectedDay?.timeSlots.find(
+      (timeSlot) => timeSlot.hour === this.selectedTime
+    );
+    if (slot) {
+      slot.available = false;
+    }
+  }
+
+  private async presentToast(
+    message: string,
+    color: 'primary' | 'danger'
+  ): Promise<void> {
     const toast = await this.toastController.create({
-      message: `Hora confirmada: ${formatFullDate(this.selectedDay.date)} a las ${this.selectedTime}`,
+      message,
       duration: 2500,
-      color: 'primary',
+      color,
       position: 'bottom',
     });
     await toast.present();
-    this.isOpen = false;
   }
 }

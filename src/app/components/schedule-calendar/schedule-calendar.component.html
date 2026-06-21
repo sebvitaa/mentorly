@@ -58,8 +58,13 @@
               Seleccionado: {{ formatFullDate(selectedDay.date) }} a las
               {{ selectedTime }}
             </div>
-            <button type="button" class="confirm-button" (click)="confirm()">
-              Confirmar
+            <button
+              type="button"
+              class="confirm-button"
+              [disabled]="isBooking"
+              (click)="confirm()"
+            >
+              {{ isBooking ? 'Confirmando...' : 'Confirmar' }}
             </button>
           }
         </div>

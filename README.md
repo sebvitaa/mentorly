@@ -81,7 +81,11 @@ npm install
 npm start
 # → http://localhost:4200
 
-# 3. Generar el build de producción (carpeta /www)
+# 3. En otra terminal, levantar la mock API local
+npm run api
+# → http://localhost:3000/api
+
+# 4. Generar el build de producción (carpeta /www)
 npm run build
 ```
 
@@ -189,21 +193,53 @@ número de día), evitando duplicación.
 
 ---
 
-## Conectar un backend
+## Mock API local y backend
 
-Por defecto la app funciona **sin backend** usando los mocks. Para conectarla a
-una API real, edita `src/environments/environment.ts`:
+En desarrollo la app apunta a una mock API local en `http://localhost:3000/api`.
+Levántala con:
+
+```bash
+npm run api
+```
+
+Endpoints disponibles:
+
+| Método | Ruta | Uso |
+|--------|------|-----|
+| `GET` | `/api/health` | Healthcheck de la mock API. |
+| `GET` | `/api/teachers` | Listado de tutores. Acepta `q` y `subject`. |
+| `GET` | `/api/teachers/:id` | Detalle de un tutor. |
+| `GET` | `/api/teachers/:id/availability` | Disponibilidad de un tutor. |
+| `GET` | `/api/subjects` | Ramos disponibles. |
+| `GET` | `/api/bookings` | Reservas creadas en memoria. |
+| `POST` | `/api/bookings` | Crea una reserva y bloquea el horario. |
+
+Body mínimo para crear una reserva:
+
+```json
+{
+  "teacherId": "1",
+  "date": "2026-06-20",
+  "hour": "10:00"
+}
+```
+
+El frontend consume DTOs de API en `snake_case` y los adapta al modelo de UI con
+los mappers de `src/app/api/mappers`, por lo que un backend real puede cambiar
+su formato sin afectar los componentes.
+
+Para conectarla a una API real, edita `src/environments/environment.ts`:
 
 ```ts
 export const environment = {
   production: false,
-  apiUrl: 'https://mi-backend.com/api', // ← URL base de la API
+  apiUrl: 'https://mi-backend.com/api',
+  useMocks: false,
 };
 ```
 
-El servicio hará un `GET` a `${apiUrl}/teachers` esperando un arreglo de objetos
-`Teacher`. Si la respuesta está vacía o la petición falla, se usan los mocks como
-respaldo, por lo que la app nunca queda en blanco.
+Si la API no responde y `useMocks` está activo, la app cae a los mocks locales de
+TypeScript para no quedar en blanco durante desarrollo.
 
 ---
 
@@ -247,6 +283,7 @@ Teacher[] filtrado ──► TeacherGrid ──► TeacherCard
 | Script | Acción |
 |--------|--------|
 | `npm start` / `npm run dev` | Servidor de desarrollo (`ng serve`) en `http://localhost:4200`. |
+| `npm run api` | Mock API local en `http://localhost:3000/api`. |
 | `npm run build` | Build de producción en `/www`. |
 | `npm run watch` | Build en modo watch (desarrollo). |
 | `npm run ng -- <cmd>` | Acceso directo al CLI de Angular. |

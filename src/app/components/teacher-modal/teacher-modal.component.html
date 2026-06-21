@@ -65,7 +65,10 @@
 
         <section class="section">
           <h3 class="section-title">Agendar hora</h3>
-          <app-schedule-calendar [availability]="teacher.availability" />
+          <app-schedule-calendar
+            [teacherId]="teacher.id"
+            [availability]="teacher.availability"
+          />
         </section>
 
         <section class="section">

@@ -2,8 +2,9 @@ export const environment = {
   production: false,
   /**
    * Base URL of the Mentorly backend API.
-   * When empty (or unreachable) the app gracefully falls back to local mock data.
-   * Expected endpoint: `${apiUrl}/teachers` returning a Teacher[] payload.
+   * In development this points to the local mock API (`npm run api`).
    */
-  apiUrl: '',
+  apiUrl: 'http://localhost:3000/api',
+  /** Allows local TypeScript mocks when the mock API is not running. */
+  useMocks: true,
 };

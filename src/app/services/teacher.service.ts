@@ -1,11 +1,12 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { catchError, map, shareReplay } from 'rxjs/operators';
 
 import { Teacher } from '../models/teacher.model';
 import { MOCK_TEACHERS } from '../data/mock-teachers';
 import { environment } from '../../environments/environment';
+import { TeacherApiService } from '../api/teacher-api.service';
+import { mapTeacherDtoToTeacher } from '../api/mappers/teacher.mapper';
 
 export interface TeacherFilters {
   query?: string;
@@ -14,7 +15,7 @@ export interface TeacherFilters {
 
 @Injectable({ providedIn: 'root' })
 export class TeacherService {
-  private readonly http = inject(HttpClient);
+  private readonly teacherApi = inject(TeacherApiService);
 
   /**
    * Source of truth. Tries the backend once and caches the result.
@@ -27,18 +28,22 @@ export class TeacherService {
 
   private loadTeachers(): Observable<Teacher[]> {
     if (!environment.apiUrl) {
-      return of(MOCK_TEACHERS);
+      return of(environment.useMocks ? MOCK_TEACHERS : []);
     }
 
-    return this.http.get<Teacher[]>(`${environment.apiUrl}/teachers`).pipe(
+    return this.teacherApi.getTeachers().pipe(
       map((teachers) =>
-        Array.isArray(teachers) && teachers.length ? teachers : MOCK_TEACHERS
+        Array.isArray(teachers) && teachers.length
+          ? teachers.map(mapTeacherDtoToTeacher)
+          : this.mockFallback()
       ),
       catchError(() => {
-        console.warn(
-          '[TeacherService] Backend unavailable — using mock teachers.'
-        );
-        return of(MOCK_TEACHERS);
+        if (environment.useMocks) {
+          console.warn(
+            '[TeacherService] API unavailable — using local TypeScript mocks.'
+          );
+        }
+        return of(this.mockFallback());
       })
     );
   }
@@ -80,5 +85,9 @@ export class TeacherService {
     }
 
     return results;
+  }
+
+  private mockFallback(): Teacher[] {
+    return environment.useMocks ? MOCK_TEACHERS : [];
   }
 }
