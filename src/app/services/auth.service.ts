@@ -1,0 +1,103 @@
+import { Injectable, inject, signal } from '@angular/core';
+import { AuthSession, User } from '@supabase/supabase-js';
+
+import { environment } from '../../environments/environment';
+import { SupabaseService } from './supabase.service';
+
+/** Datos que el usuario entrega al registrarse. */
+export interface SignUpData {
+  email: string;
+  password: string;
+  fullName: string;
+  career: string;
+  /** Año que cursa, ej. "3er año". */
+  year: string;
+}
+
+/**
+ * Maneja la sesión del usuario contra Supabase Auth.
+ *
+ * Por ahora solo email/contraseña (environment.auth.emailPassword). El acceso
+ * institucional UDD está listo pero desactivado (environment.auth.uddSso).
+ */
+@Injectable({ providedIn: 'root' })
+export class AuthService {
+  private readonly supabase = inject(SupabaseService).client;
+
+  /** Sesión y usuario actuales, reactivos (signals). */
+  readonly session = signal<AuthSession | null>(null);
+  readonly user = signal<User | null>(null);
+
+  constructor() {
+    // Hidrata la sesión guardada (si existe) y escucha cambios.
+    this.supabase.auth.getSession().then(({ data }) => {
+      this.session.set(data.session);
+      this.user.set(data.session?.user ?? null);
+    });
+
+    this.supabase.auth.onAuthStateChange((_event, session) => {
+      this.session.set(session);
+      this.user.set(session?.user ?? null);
+    });
+  }
+
+  /** ¿Hay alguien logueado? */
+  isAuthenticated(): boolean {
+    return this.user() !== null;
+  }
+
+  /**
+   * Registro con correo y contraseña.
+   * `fullName`, `career` y `year` viajan en los metadatos; el trigger
+   * `handle_new_user` los usa para crear la fila en `profiles`.
+   */
+  signUp(data: SignUpData) {
+    return this.supabase.auth.signUp({
+      email: data.email,
+      password: data.password,
+      options: {
+        data: {
+          full_name: data.fullName,
+          career: data.career,
+          year: data.year,
+        },
+      },
+    });
+  }
+
+  /** Inicio de sesión con correo y contraseña. */
+  signIn(email: string, password: string) {
+    return this.supabase.auth.signInWithPassword({ email, password });
+  }
+
+  /** Cierra la sesión actual. */
+  signOut() {
+    return this.supabase.auth.signOut();
+  }
+
+  /** ¿Está habilitado el acceso institucional UDD? */
+  get uddSsoEnabled(): boolean {
+    return environment.auth.uddSso;
+  }
+
+  /**
+   * Acceso institucional UDD (Google con dominio udd.cl).
+   * Desactivado por ahora: lanza error salvo que se active el flag
+   * `environment.auth.uddSso` y se configure el provider en Supabase.
+   */
+  signInWithUdd() {
+    if (!environment.auth.uddSso) {
+      return Promise.reject(
+        new Error('El acceso UDD está desactivado por ahora.')
+      );
+    }
+
+    return this.supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        queryParams: { hd: 'udd.cl' },
+        redirectTo: window.location.origin,
+      },
+    });
+  }
+}

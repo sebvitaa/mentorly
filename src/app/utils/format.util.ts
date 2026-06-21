@@ -40,3 +40,13 @@ export function getDayName(dateString: string): string {
 export function getDayNumber(dateString: string): number {
   return new Date(dateString).getDate();
 }
+
+/** Pesos chilenos con separador de miles, ej. 8000 → "$8.000". */
+export function formatPrice(value: number): string {
+  return '$' + value.toLocaleString('es-CL');
+}
+
+/** Rango de precio a partir de min/max, ej. "$8.000-$12.000". */
+export function formatPriceRange(min: number, max: number): string {
+  return `${formatPrice(min)}-${formatPrice(max)}`;
+}
