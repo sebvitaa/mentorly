@@ -58,14 +58,88 @@
               Seleccionado: {{ formatFullDate(selectedDay.date) }} a las
               {{ selectedTime }}
             </div>
-            <button
-              type="button"
-              class="confirm-button"
-              [disabled]="isBooking"
-              (click)="confirm()"
-            >
-              {{ isBooking ? 'Confirmando...' : 'Confirmar' }}
-            </button>
+            <form class="booking-form" novalidate (ngSubmit)="confirm()">
+              <div class="booking-form-grid">
+                <label class="booking-field">
+                  <span>Nombre</span>
+                  <input
+                    type="text"
+                    name="firstName"
+                    autocomplete="given-name"
+                    [(ngModel)]="bookingForm.firstName"
+                    [class.invalid]="isFieldInvalid('firstName')"
+                  />
+                </label>
+
+                <label class="booking-field">
+                  <span>Apellido</span>
+                  <input
+                    type="text"
+                    name="lastName"
+                    autocomplete="family-name"
+                    [(ngModel)]="bookingForm.lastName"
+                    [class.invalid]="isFieldInvalid('lastName')"
+                  />
+                </label>
+              </div>
+
+              <label class="booking-field">
+                <span>Carrera</span>
+                <input
+                  type="text"
+                  name="career"
+                  autocomplete="organization-title"
+                  placeholder="Ej: Ingenieria Comercial"
+                  [(ngModel)]="bookingForm.career"
+                  [class.invalid]="isFieldInvalid('career')"
+                />
+              </label>
+
+              <div class="booking-form-grid">
+                <label class="booking-field">
+                  <span>Año cursando</span>
+                  <input
+                    type="text"
+                    name="currentYear"
+                    placeholder="Ej: 3er año"
+                    [(ngModel)]="bookingForm.currentYear"
+                    [class.invalid]="isFieldInvalid('currentYear')"
+                  />
+                </label>
+
+                <label class="booking-field">
+                  <span>Correo UDD</span>
+                  <input
+                    type="email"
+                    name="email"
+                    autocomplete="email"
+                    placeholder="nombre&#64;udd.cl"
+                    [(ngModel)]="bookingForm.email"
+                    [class.invalid]="isFieldInvalid('email')"
+                  />
+                </label>
+              </div>
+
+              <label class="booking-field">
+                <span>Mensaje opcional</span>
+                <textarea
+                  name="message"
+                  rows="3"
+                  placeholder="Cuéntale al tutor qué necesitas preparar"
+                  [(ngModel)]="bookingForm.message"
+                ></textarea>
+              </label>
+
+              @if (hasFormErrors) {
+                <p class="form-error">
+                  Completa todos los campos y usa un correo institucional &#64;udd.cl.
+                </p>
+              }
+
+              <button type="submit" class="confirm-button" [disabled]="isBooking">
+                {{ isBooking ? 'Enviando solicitud...' : 'Enviar solicitud' }}
+              </button>
+            </form>
           }
         </div>
       }

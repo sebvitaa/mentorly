@@ -124,6 +124,7 @@ const teachers = teacherSeeds.map((teacher, index) => ({
 }));
 
 const bookings = [];
+const notifications = [];
 
 const server = createServer(async (request, response) => {
   const url = new URL(request.url ?? '/', `http://${request.headers.host}`);
@@ -169,6 +170,29 @@ const server = createServer(async (request, response) => {
 
     if (url.pathname === `${API_PREFIX}/bookings` && request.method === 'POST') {
       return createBooking(request, response);
+    }
+
+    const bookingTransitionMatch = url.pathname.match(
+      /^\/api\/bookings\/([^/]+)\/(accept|reject|cancel|complete)$/
+    );
+    if (bookingTransitionMatch && request.method === 'PATCH') {
+      return transitionBooking(
+        request,
+        response,
+        bookingTransitionMatch[1],
+        bookingTransitionMatch[2]
+      );
+    }
+
+    if (url.pathname === `${API_PREFIX}/notifications` && request.method === 'GET') {
+      return sendJson(response, notifications);
+    }
+
+    const notificationReadMatch = url.pathname.match(
+      /^\/api\/notifications\/([^/]+)\/read$/
+    );
+    if (notificationReadMatch && request.method === 'PATCH') {
+      return markNotificationAsRead(response, notificationReadMatch[1]);
     }
 
     return sendJson(response, { message: 'Route not found' }, 404);
@@ -227,13 +251,51 @@ function filterTeachers(url) {
 
 async function createBooking(request, response) {
   const body = await readJson(request);
-  const { teacherId, date, hour } = body;
+  const teacherId = body.teacher_id ?? body.teacherId;
+  const {
+    date,
+    hour,
+    student_first_name: studentFirstName,
+    student_last_name: studentLastName,
+    student_career: studentCareer,
+    student_current_year: studentCurrentYear,
+    student_email: studentEmail,
+    message,
+  } = body;
 
-  if (!teacherId || !date || !hour) {
-    return sendJson(
+  if (
+    !teacherId ||
+    !date ||
+    !hour ||
+    !studentFirstName ||
+    !studentLastName ||
+    !studentCareer ||
+    !studentCurrentYear ||
+    !studentEmail
+  ) {
+    return sendError(
       response,
-      { message: 'teacherId, date and hour are required' },
-      400
+      422,
+      'VALIDATION_ERROR',
+      'teacher_id, date, hour and student data are required'
+    );
+  }
+
+  if (!isUddEmail(studentEmail)) {
+    return sendError(
+      response,
+      422,
+      'INVALID_UDD_EMAIL',
+      'Student email must belong to the UDD institutional domain.'
+    );
+  }
+
+  if (isPastDate(date)) {
+    return sendError(
+      response,
+      422,
+      'BOOKING_PAST_DATE',
+      'Past dates cannot be booked.'
     );
   }
 
@@ -242,29 +304,128 @@ async function createBooking(request, response) {
   const slot = day?.time_slots.find((item) => item.hour === hour);
 
   if (!teacher || !day || !slot) {
-    return sendJson(response, { message: 'Availability not found' }, 404);
+    return sendError(response, 404, 'TEACHER_NOT_FOUND', 'Availability not found.');
   }
 
   if (!slot.available) {
-    return sendJson(response, { message: 'Time slot is not available' }, 409);
+    return sendError(
+      response,
+      409,
+      'BOOKING_SLOT_TAKEN',
+      'The selected time slot is no longer available.'
+    );
   }
 
+  // Pending requests block the slot until accepted, rejected or cancelled.
   slot.available = false;
 
+  const now = new Date().toISOString();
   const booking = {
     id: randomUUID(),
-    status: 'confirmed',
+    status: 'pending',
+    student_id: 'mock-student',
     teacher_id: teacherId,
     teacher_name: teacher.name,
+    subject_id: body.subject_id ?? null,
     date,
     hour,
-    student_name: body.studentName ?? 'Estudiante UDD',
-    student_email: body.studentEmail ?? null,
-    created_at: new Date().toISOString(),
+    student_first_name: studentFirstName,
+    student_last_name: studentLastName,
+    student_career: studentCareer,
+    student_current_year: studentCurrentYear,
+    student_email: studentEmail,
+    message: message ?? null,
+    tutor_response_message: null,
+    created_at: now,
+    updated_at: now,
+    confirmed_at: null,
+    cancelled_at: null,
   };
 
   bookings.push(booking);
+  notifications.push(
+    createNotification({
+      type: 'booking_requested',
+      title: 'Nueva solicitud de tutoria',
+      message: `${studentFirstName} ${studentLastName} solicito una clase para el ${date} a las ${hour}.`,
+    })
+  );
   return sendJson(response, booking, 201);
+}
+
+async function transitionBooking(request, response, bookingId, action) {
+  const body = await readJson(request);
+  const booking = bookings.find((item) => item.id === bookingId);
+
+  if (!booking) {
+    return sendError(response, 404, 'BOOKING_NOT_FOUND', 'Booking not found.');
+  }
+
+  if (action === 'accept') {
+    if (booking.status !== 'pending') {
+      return sendInvalidTransition(response);
+    }
+    booking.status = 'confirmed';
+    booking.tutor_response_message = body.message ?? null;
+    booking.confirmed_at = new Date().toISOString();
+    booking.updated_at = booking.confirmed_at;
+    notifications.push(
+      createNotification({
+        type: 'booking_confirmed',
+        title: 'Tutoria confirmada',
+        message: `Tu solicitud para el ${booking.date} a las ${booking.hour} fue confirmada.`,
+      })
+    );
+    return sendJson(response, booking);
+  }
+
+  if (action === 'reject') {
+    if (booking.status !== 'pending') {
+      return sendInvalidTransition(response);
+    }
+    booking.status = 'rejected';
+    booking.tutor_response_message = body.message ?? null;
+    booking.updated_at = new Date().toISOString();
+    releaseSlot(booking.teacher_id, booking.date, booking.hour);
+    notifications.push(
+      createNotification({
+        type: 'booking_rejected',
+        title: 'Tutoria rechazada',
+        message: `Tu solicitud para el ${booking.date} a las ${booking.hour} fue rechazada.`,
+      })
+    );
+    return sendJson(response, booking);
+  }
+
+  if (action === 'cancel') {
+    if (!['pending', 'confirmed'].includes(booking.status)) {
+      return sendInvalidTransition(response);
+    }
+    booking.status = 'cancelled';
+    booking.tutor_response_message = body.reason ?? body.message ?? null;
+    booking.cancelled_at = new Date().toISOString();
+    booking.updated_at = booking.cancelled_at;
+    releaseSlot(booking.teacher_id, booking.date, booking.hour);
+    notifications.push(
+      createNotification({
+        type: 'booking_cancelled',
+        title: 'Tutoria cancelada',
+        message: `La tutoria del ${booking.date} a las ${booking.hour} fue cancelada.`,
+      })
+    );
+    return sendJson(response, booking);
+  }
+
+  if (action === 'complete') {
+    if (booking.status !== 'confirmed') {
+      return sendInvalidTransition(response);
+    }
+    booking.status = 'completed';
+    booking.updated_at = new Date().toISOString();
+    return sendJson(response, booking);
+  }
+
+  return sendError(response, 404, 'NOT_FOUND', 'Route not found.');
 }
 
 function findTeacher(id) {
@@ -273,6 +434,56 @@ function findTeacher(id) {
 
 function uniqueSubjects() {
   return [...new Set(teachers.flatMap((teacher) => teacher.subjects))].sort();
+}
+
+function releaseSlot(teacherId, date, hour) {
+  const teacher = findTeacher(teacherId);
+  const slot = teacher?.availability
+    .find((item) => item.date === date)
+    ?.time_slots.find((item) => item.hour === hour);
+
+  if (slot) {
+    slot.available = true;
+  }
+}
+
+function sendInvalidTransition(response) {
+  return sendError(
+    response,
+    409,
+    'BOOKING_INVALID_STATUS_TRANSITION',
+    'Booking cannot transition to the requested status.'
+  );
+}
+
+function createNotification({ type, title, message }) {
+  return {
+    id: randomUUID(),
+    user_id: 'mock-user',
+    type,
+    title,
+    message,
+    read_at: null,
+    created_at: new Date().toISOString(),
+  };
+}
+
+function markNotificationAsRead(response, notificationId) {
+  const notification = notifications.find((item) => item.id === notificationId);
+  if (!notification) {
+    return sendError(response, 404, 'NOTIFICATION_NOT_FOUND', 'Notification not found.');
+  }
+
+  notification.read_at = new Date().toISOString();
+  return sendJson(response, notification);
+}
+
+function isUddEmail(email) {
+  return /^[^\s@]+@udd\.cl$/i.test(email);
+}
+
+function isPastDate(dateString) {
+  return dateString < toIsoDate(new Date());
 }
 
 function normalize(value) {
@@ -310,6 +521,10 @@ function sendJson(response, data, statusCode = 200) {
   response.end(payload);
 }
 
+function sendError(response, statusCode, code, message, details = {}) {
+  return sendJson(response, { code, message, details }, statusCode);
+}
+
 function sendNoContent(response) {
   response.writeHead(204, corsHeaders());
   response.end();
@@ -318,7 +533,7 @@ function sendNoContent(response) {
 function corsHeaders(extraHeaders = {}) {
   return {
     'access-control-allow-origin': '*',
-    'access-control-allow-methods': 'GET,POST,OPTIONS',
+    'access-control-allow-methods': 'GET,POST,PATCH,OPTIONS',
     'access-control-allow-headers': 'content-type',
     ...extraHeaders,
   };

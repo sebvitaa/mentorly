@@ -212,17 +212,29 @@ Endpoints disponibles:
 | `GET` | `/api/teachers/:id/availability` | Disponibilidad de un tutor. |
 | `GET` | `/api/subjects` | Ramos disponibles. |
 | `GET` | `/api/bookings` | Reservas creadas en memoria. |
-| `POST` | `/api/bookings` | Crea una reserva y bloquea el horario. |
+| `POST` | `/api/bookings` | Crea una solicitud `pending` y bloquea el horario. |
+| `PATCH` | `/api/bookings/:id/accept` | Acepta una solicitud. |
+| `PATCH` | `/api/bookings/:id/reject` | Rechaza una solicitud y libera el horario. |
+| `PATCH` | `/api/bookings/:id/cancel` | Cancela una solicitud/reserva y libera el horario. |
+| `GET` | `/api/notifications` | Notificaciones simuladas en memoria. |
 
 Body mínimo para crear una reserva:
 
 ```json
 {
-  "teacherId": "1",
+  "teacher_id": "1",
   "date": "2026-06-20",
-  "hour": "10:00"
+  "hour": "10:00",
+  "student_first_name": "Josefa",
+  "student_last_name": "Perez",
+  "student_career": "Ingenieria Comercial",
+  "student_current_year": "2do ano",
+  "student_email": "josefa.perez@udd.cl"
 }
 ```
+
+Las solicitudes quedan en estado `pending`, bloquean temporalmente el horario y
+deben ser aceptadas o rechazadas por la contraparte.
 
 El frontend consume DTOs de API en `snake_case` y los adapta al modelo de UI con
 los mappers de `src/app/api/mappers`, por lo que un backend real puede cambiar

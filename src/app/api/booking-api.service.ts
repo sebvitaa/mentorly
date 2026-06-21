@@ -14,17 +14,45 @@ export class BookingApiService {
     if (!this.baseUrl && environment.useMocks) {
       return of({
         id: crypto.randomUUID(),
-        status: 'confirmed',
-        teacher_id: payload.teacherId,
+        status: 'pending',
+        student_id: 'mock-student',
+        teacher_id: payload.teacher_id,
         teacher_name: 'Tutor mock',
+        subject_id: payload.subject_id ?? null,
         date: payload.date,
         hour: payload.hour,
-        student_name: payload.studentName ?? 'Estudiante UDD',
-        student_email: payload.studentEmail ?? null,
+        student_first_name: payload.student_first_name,
+        student_last_name: payload.student_last_name,
+        student_career: payload.student_career,
+        student_current_year: payload.student_current_year,
+        student_email: payload.student_email,
+        message: payload.message ?? null,
+        tutor_response_message: null,
         created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        confirmed_at: null,
+        cancelled_at: null,
       });
     }
 
     return this.http.post<BookingDto>(`${this.baseUrl}/bookings`, payload);
+  }
+
+  acceptBooking(id: string, message?: string): Observable<BookingDto> {
+    return this.http.patch<BookingDto>(`${this.baseUrl}/bookings/${id}/accept`, {
+      message,
+    });
+  }
+
+  rejectBooking(id: string, message?: string): Observable<BookingDto> {
+    return this.http.patch<BookingDto>(`${this.baseUrl}/bookings/${id}/reject`, {
+      message,
+    });
+  }
+
+  cancelBooking(id: string, reason?: string): Observable<BookingDto> {
+    return this.http.patch<BookingDto>(`${this.baseUrl}/bookings/${id}/cancel`, {
+      reason,
+    });
   }
 }

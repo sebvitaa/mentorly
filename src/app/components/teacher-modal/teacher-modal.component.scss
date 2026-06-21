@@ -179,6 +179,18 @@ ion-modal.teacher-modal {
   color: var(--brand-ink);
 }
 
+.contact-locked {
+  font-family: var(--app-font);
+  font-weight: 500;
+  font-size: 15px;
+  color: var(--brand-muted);
+  line-height: 1.5;
+  padding: 14px 16px;
+  background: var(--brand-surface-alt);
+  border: 1px solid var(--brand-border);
+  border-radius: 6px;
+}
+
 .contact-button {
   width: 100%;
   font-family: var(--app-font);

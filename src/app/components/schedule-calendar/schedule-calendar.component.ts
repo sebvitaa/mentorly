@@ -1,4 +1,5 @@
 import { Component, Input, OnInit, inject } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { ToastController } from '@ionic/angular/standalone';
 
 import { DayAvailability } from '../../models/teacher.model';
@@ -12,6 +13,7 @@ import {
 @Component({
   selector: 'app-schedule-calendar',
   standalone: true,
+  imports: [FormsModule],
   templateUrl: './schedule-calendar.component.html',
   styleUrl: './schedule-calendar.component.scss',
 })
@@ -30,6 +32,8 @@ export class ScheduleCalendarComponent implements OnInit {
   selectedDay: DayAvailability | null = null;
   selectedTime: string | null = null;
   isBooking = false;
+  formSubmitted = false;
+  bookingForm = this.createEmptyBookingForm();
 
   /** Calendar window: every date from today through two weeks out. */
   allDates: string[] = [];
@@ -64,6 +68,7 @@ export class ScheduleCalendarComponent implements OnInit {
     if (!this.isOpen) {
       this.selectedDay = null;
       this.selectedTime = null;
+      this.formSubmitted = false;
     }
   }
 
@@ -77,6 +82,7 @@ export class ScheduleCalendarComponent implements OnInit {
 
   selectTime(hour: string): void {
     this.selectedTime = hour;
+    this.formSubmitted = false;
   }
 
   async confirm(): Promise<void> {
@@ -84,23 +90,43 @@ export class ScheduleCalendarComponent implements OnInit {
       return;
     }
 
+    this.formSubmitted = true;
+    if (!this.isFormValid()) {
+      await this.presentToast(
+        'Completa los datos requeridos con un correo institucional @udd.cl.',
+        'danger'
+      );
+      return;
+    }
+
+    const date = this.selectedDay.date;
+    const hour = this.selectedTime;
+
     this.isBooking = true;
     this.bookingApi
       .createBooking({
-        teacherId: this.teacherId,
-        date: this.selectedDay.date,
-        hour: this.selectedTime,
+        teacher_id: this.teacherId,
+        date,
+        hour,
+        student_first_name: this.bookingForm.firstName.trim(),
+        student_last_name: this.bookingForm.lastName.trim(),
+        student_career: this.bookingForm.career.trim(),
+        student_current_year: this.bookingForm.currentYear.trim(),
+        student_email: this.bookingForm.email.trim(),
+        message: this.bookingForm.message.trim() || null,
       })
       .subscribe({
         next: async () => {
-          this.markSelectedSlotAsUnavailable();
+          this.markSlotAsUnavailable(date, hour);
           await this.presentToast(
-            `Hora confirmada: ${formatFullDate(this.selectedDay!.date)} a las ${this.selectedTime}`,
+            `Solicitud enviada: ${formatFullDate(date)} a las ${hour}. Queda pendiente de confirmacion del tutor.`,
             'primary'
           );
           this.isOpen = false;
           this.selectedDay = null;
           this.selectedTime = null;
+          this.formSubmitted = false;
+          this.bookingForm = this.createEmptyBookingForm();
           this.isBooking = false;
         },
         error: async () => {
@@ -113,13 +139,65 @@ export class ScheduleCalendarComponent implements OnInit {
       });
   }
 
-  private markSelectedSlotAsUnavailable(): void {
-    const slot = this.selectedDay?.timeSlots.find(
-      (timeSlot) => timeSlot.hour === this.selectedTime
+  isFieldInvalid(field: keyof BookingRequestForm): boolean {
+    if (!this.formSubmitted) {
+      return false;
+    }
+
+    const value = this.bookingForm[field].trim();
+    if (field === 'message') {
+      return false;
+    }
+
+    if (field === 'email') {
+      return !this.isUddEmail(value);
+    }
+
+    return !value;
+  }
+
+  get hasFormErrors(): boolean {
+    return (
+      this.isFieldInvalid('firstName') ||
+      this.isFieldInvalid('lastName') ||
+      this.isFieldInvalid('career') ||
+      this.isFieldInvalid('currentYear') ||
+      this.isFieldInvalid('email')
     );
+  }
+
+  private isFormValid(): boolean {
+    return (
+      !!this.bookingForm.firstName.trim() &&
+      !!this.bookingForm.lastName.trim() &&
+      !!this.bookingForm.career.trim() &&
+      !!this.bookingForm.currentYear.trim() &&
+      this.isUddEmail(this.bookingForm.email.trim())
+    );
+  }
+
+  private isUddEmail(email: string): boolean {
+    return /^[^\s@]+@udd\.cl$/i.test(email);
+  }
+
+  private markSlotAsUnavailable(date: string, hour: string): void {
+    const slot = this.availability
+      .find((day) => day.date === date)
+      ?.timeSlots.find((timeSlot) => timeSlot.hour === hour);
     if (slot) {
       slot.available = false;
     }
+  }
+
+  private createEmptyBookingForm(): BookingRequestForm {
+    return {
+      firstName: '',
+      lastName: '',
+      career: '',
+      currentYear: '',
+      email: '',
+      message: '',
+    };
   }
 
   private async presentToast(
@@ -134,4 +212,13 @@ export class ScheduleCalendarComponent implements OnInit {
     });
     await toast.present();
   }
+}
+
+interface BookingRequestForm {
+  firstName: string;
+  lastName: string;
+  career: string;
+  currentYear: string;
+  email: string;
+  message: string;
 }

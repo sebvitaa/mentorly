@@ -53,14 +53,11 @@
         </section>
 
         <section class="section">
-          <h3 class="section-title">Contacto preferido</h3>
-          <div class="contact">
-            <span>{{ teacher.contact.type === 'email' ? '📧' : '📱' }}</span>
-            <span>{{ teacher.contact.value }}</span>
+          <h3 class="section-title">Contacto</h3>
+          <div class="contact-locked">
+            El contacto del tutor se habilitara cuando acepte tu solicitud de
+            reserva.
           </div>
-          <button type="button" class="contact-button" (click)="contact()">
-            Contactar
-          </button>
         </section>
 
         <section class="section">

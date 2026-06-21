@@ -744,9 +744,9 @@ confirmed -> cancelled
 confirmed -> completed
 ```
 
-Decision pendiente:
+Decision tomada:
 
-- Definir si `pending` bloquea temporalmente el horario o si el bloqueo ocurre solo al pasar a `confirmed`.
+- `pending` bloquea temporalmente el horario para evitar solicitudes simultaneas sobre el mismo bloque. Si la reserva se rechaza o cancela, el horario se libera.
 
 ## 9. Errores
 
@@ -830,15 +830,21 @@ Endpoints implementados actualmente:
 | `GET` | `/api/subjects` | Implementado |
 | `GET` | `/api/bookings` | Implementado |
 | `POST` | `/api/bookings` | Implementado |
+| `PATCH` | `/api/bookings/:id/accept` | Implementado |
+| `PATCH` | `/api/bookings/:id/reject` | Implementado |
+| `PATCH` | `/api/bookings/:id/cancel` | Implementado |
+| `PATCH` | `/api/bookings/:id/complete` | Implementado |
+| `GET` | `/api/notifications` | Implementado |
+| `PATCH` | `/api/notifications/:id/read` | Implementado |
 
 Diferencias con backend real esperado:
 
 - No tiene autenticacion real.
 - No persiste datos en disco o base de datos.
 - Las reservas se guardan solo en memoria.
-- Las reservas se crean como `confirmed` en la mock API actual para demostrar el flujo de UI existente.
-- No envia notificaciones reales.
-- No oculta contacto segun estado de reserva.
+- Las reservas se crean como `pending` y bloquean el horario hasta aceptacion, rechazo o cancelacion.
+- Las notificaciones se simulan en memoria.
+- El frontend oculta el contacto antes de la confirmacion, pero la mock API no valida permisos reales para exponerlo.
 - No implementa administracion real de tutores o ramos.
 
 ## 12. Pendientes
@@ -846,7 +852,6 @@ Diferencias con backend real esperado:
 - Definir proveedor de autenticacion.
 - Definir si los endpoints de tutores seran publicos o requeriran login.
 - Confirmar dominio institucional exacto permitido para correos UDD.
-- Definir si `pending` bloquea disponibilidad.
 - Definir canal de notificaciones.
 - Definir duracion de clases y reglas de bloques horarios.
 - Definir si habra modalidad online, presencial o ambas.
