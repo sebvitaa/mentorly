@@ -1,12 +1,14 @@
 # Mentorly UDD
 
-Aplicación **Ionic + Angular** que conecta a estudiantes de la UDD con
-profesores particulares. Permite buscar tutores por nombre, ramo o carrera,
-filtrar por áreas frecuentes, revisar el perfil y las reseñas de cada profesor,
-y agendar una hora desde un calendario de disponibilidad.
+Aplicación **Ionic + Angular** que conecta a estudiantes de la UDD con tutores
+particulares (que también son estudiantes UDD). Permite registrarse con correo
+institucional, buscar tutores por nombre/ramo/carrera, ver su ficha y reseñas,
+**agendar una hora**, y —desde el perfil— **publicarse como tutor** definiendo
+precio, ramos, contacto y disponibilidad semanal.
 
-> Migrada desde el mockup original en **React + Vite** a una arquitectura por
-> componentes, compartimentalizada y lista para conectarse a un backend real.
+> El backend real es **Supabase** (Auth + Postgres + RLS). La app conserva un
+> _fallback_ a datos mock locales para que el catálogo no quede en blanco si
+> Supabase no responde.
 
 ---
 
@@ -16,47 +18,40 @@ y agendar una hora desde un calendario de disponibilidad.
 - [Stack](#stack)
 - [Requisitos](#requisitos)
 - [Cómo ejecutar](#cómo-ejecutar)
+- [Configuración (Supabase)](#configuración-supabase)
+- [Base de datos y migraciones](#base-de-datos-y-migraciones)
 - [Estructura del proyecto](#estructura-del-proyecto)
 - [Arquitectura](#arquitectura)
-  - [Modelos](#modelos)
-  - [Servicio de datos y fallback offline](#servicio-de-datos-y-fallback-offline)
-  - [Componentes](#componentes)
-  - [Página](#página)
-  - [Utilidades](#utilidades)
-- [Conectar un backend](#conectar-un-backend)
-- [Flujo de datos](#flujo-de-datos)
-- [Estilos y diseño](#estilos-y-diseño)
+- [Autenticación y seguridad](#autenticación-y-seguridad)
+- [Publicación de tutores](#publicación-de-tutores)
+- [Pruebas](#pruebas)
 - [Scripts disponibles](#scripts-disponibles)
-- [Decisiones de la migración](#decisiones-de-la-migración)
+- [Estado conocido y pendientes](#estado-conocido-y-pendientes)
+- [Documentación adicional](#documentación-adicional)
 
 ---
 
 ## Características
 
-- **Búsqueda** de profesores por nombre, carrera o ramo.
-- **Filtros rápidos** por áreas frecuentes (Cálculo, Economía, Programación,
-  Química).
-- **Estados de carga** con _skeletons_ y un **estado vacío** cuando no hay
-  resultados.
-- **Ficha de profesor** en un modal: biografía, ramos, rango de precios,
-  reseñas y botón para guardar favoritos.
-- **Agendamiento**: calendario de dos semanas con horas disponibles y
-  solicitud pendiente de confirmación por el tutor.
-- **Catálogo académico UDD**: al agendar, el estudiante selecciona su campus,
-  facultad y carrera a través de selects dependientes, garantizando datos
-  normalizados.
-- **Registro e inicio de sesión** con correo institucional UDD. Toda cuenta es
-  una persona (`profiles`); puede reservar tutorías y, opcionalmente, marcar
-  que también quiere ofrecerlas. Al marcarlo se crea un perfil tutor inicial
-  (`incomplete`) para completar después.
-- **Historial local** de solicitudes y tutores favoritos en `/requests`,
-  persistido con `localStorage`.
-- **Uso responsable**: el formulario exige aceptar que la tutoría es para
-  reforzamiento académico y no para resolver evaluaciones.
-- **Contacto protegido**: el contacto del tutor se oculta hasta que la solicitud
-  sea confirmada.
-- **Funciona offline**: si no hay backend configurado o falla, la app usa datos
-  mock locales automáticamente.
+- **Registro e inicio de sesión** con correo institucional `@udd.cl` (Supabase
+  Auth, email/contraseña). Toda cuenta es una persona (`profiles`); puede
+  reservar tutorías y, opcionalmente, ofrecerlas.
+- **Catálogo de tutores**: búsqueda por nombre, carrera o ramo, y filtros
+  rápidos. Solo se listan tutores **publicados** (`active`) y con al menos un
+  ramo.
+- **Ficha de tutor** en un modal: biografía, ramos, rango de precios, reseñas y
+  favoritos. El **contacto se oculta** hasta que el tutor confirme una reserva.
+- **Agendamiento**: calendario de dos semanas con horas disponibles; la solicitud
+  queda `pending` hasta que el tutor la confirme.
+- **Publicación como tutor** desde el perfil: precio (min/máx), ramos que enseña,
+  contacto preferido y **disponibilidad semanal** (grilla por día y hora). Al
+  completar todo, queda publicado automáticamente.
+- **Catálogo académico UDD** (campus / facultad / carrera) en selects
+  dependientes durante el registro.
+- **Rutas protegidas**: `/profile` y `/requests` requieren sesión (route guard).
+- **Rate limiting** de login y registro (1 intento cada 10 s, lado cliente).
+- **Fallback offline**: si la consulta de tutores a Supabase falla, la app usa
+  datos mock locales.
 
 ---
 
@@ -64,11 +59,12 @@ y agendar una hora desde un calendario de disponibilidad.
 
 | Herramienta | Versión | Rol |
 |-------------|---------|-----|
-| [Angular](https://angular.dev) | 19 | Framework SPA (standalone components) |
+| [Angular](https://angular.dev) | 19 | Framework SPA (standalone components, signals) |
 | [Ionic](https://ionicframework.com) | 8 | Componentes UI y experiencia móvil |
+| [Supabase](https://supabase.com) | JS v2 | Auth, Postgres, RLS, RPCs |
 | TypeScript | 5.6 | Lenguaje |
 | RxJS | 7.8 | Manejo reactivo de datos |
-| SCSS | — | Estilos |
+| Jest | 29 | Pruebas (unitarias + integración) |
 
 ---
 
@@ -76,9 +72,10 @@ y agendar una hora desde un calendario de disponibilidad.
 
 - **Node.js** 18 o superior (probado con Node 24).
 - **npm** 9 o superior.
+- Un proyecto **Supabase** con el esquema aplicado (ver
+  [Base de datos y migraciones](#base-de-datos-y-migraciones)).
 
-> No es necesario instalar el CLI de Angular ni de Ionic de forma global: ambos
-> se ejecutan vía `npx` / scripts de npm.
+> No es necesario instalar el CLI de Angular ni de Ionic de forma global.
 
 ---
 
@@ -92,220 +89,146 @@ npm install
 npm start
 # → http://localhost:4200
 
-# 3. En otra terminal, levantar la mock API local
-npm run api
-# → http://localhost:3000/api
-
-# 4. Generar el build de producción (carpeta /www)
+# 3. Build de producción (carpeta /www)
 npm run build
 ```
+
+La conexión a Supabase ya viene configurada en `src/environments/environment.ts`.
+
+---
+
+## Configuración (Supabase)
+
+`src/environments/environment.ts` (y su variante `.prod.ts`):
+
+```ts
+export const environment = {
+  production: false,
+  supabase: {
+    url: 'https://<tu-proyecto>.supabase.co',
+    // Clave PÚBLICA (publishable). NUNCA la service_role key en el frontend.
+    publishableKey: 'sb_publishable_...',
+  },
+  auth: {
+    emailPassword: true, // login con correo/contraseña
+    uddSso: false,       // OAuth institucional (preparado, desactivado)
+  },
+};
+```
+
+Un único `SupabaseService` (`src/app/services/supabase.service.ts`) crea el
+cliente y lo comparte por inyección de dependencias.
+
+---
+
+## Base de datos y migraciones
+
+El esquema vive en `docs/sql/` y se aplica **en orden** desde el **SQL Editor de
+Supabase** (no hay migraciones automáticas):
+
+| Archivo | Contenido |
+|---------|-----------|
+| `fase-1-academic-catalog.sql` | Tablas `campuses`/`faculties`/`careers` + seed, columnas en `profiles`, trigger `handle_new_user`. |
+| `fase-2-bookings.sql` | Tabla `bookings` + RLS. |
+| `fase-3-hardening.sql` | Fuerza dominio `@udd.cl` (trigger), oculta el contacto del tutor (grants), reafirma RLS. |
+| `fase-4-person-tutor-architecture.sql` | Arquitectura persona/tutor: `teachers.status`, `admission_year`, trigger extendido. |
+| `fase-5-tutor-publishing.sql` | Publicación del tutor: columna `teachers.weekly_availability` + RPCs `get_my_tutor_profile` / `save_tutor_profile` / `expand_tutor_availability`. |
+| `seed-demo-tutor.sql` | Tutor de demostración para probar el flujo de reserva. |
+
+El detalle de tablas, columnas, RLS y funciones está en
+[`docs/supabase-schema.md`](docs/supabase-schema.md).
 
 ---
 
 ## Estructura del proyecto
 
 ```
-TAWM_01/
-├── angular.json            # Configuración de build/serve de Angular
-├── tsconfig.json           # Configuración base de TypeScript (modo strict)
-├── tsconfig.app.json       # Configuración de la app
-├── package.json            # Dependencias y scripts
-└── src/
-    ├── index.html          # Documento raíz (<app-root>)
-    ├── main.ts             # Bootstrap de la app + providers (router, http, ionic)
-    ├── global.scss         # CSS de Ionic + fuente Inter + tokens
-    ├── theme/
-    │   └── variables.scss  # Paleta de marca y variables de Ionic
-    ├── environments/
-    │   └── environment.ts  # Configuración (apiUrl del backend)
-    ├── assets/             # Recursos estáticos
-    └── app/
-        ├── app.component.ts    # Shell raíz (ion-app + router-outlet)
-        ├── app.routes.ts       # Rutas (lazy load de la home)
-        ├── models/                     # Interfaces de dominio y persistencia local
-        ├── data/
-        │   └── mock-teachers.ts        # Datos mock (fallback offline)
-        ├── services/                   # Carga de datos, favoritos e historial local
-        ├── utils/
-        │   └── format.util.ts          # Helpers de formato compartidos
-        ├── components/
-        │   ├── header/                 # Encabezado con logo
-        │   ├── hero/                   # Título, buscador y filtros rápidos
-        │   ├── teacher-card/           # Tarjeta de profesor
-        │   ├── teacher-grid/           # Grilla + skeletons + estado vacío
-        │   ├── teacher-modal/          # Ficha detallada (ion-modal)
-        │   └── schedule-calendar/      # Calendario de disponibilidad
-        └── pages/
-            ├── home/                   # Página que orquesta búsqueda y perfil
-            └── requests/               # Historial local y favoritos
+src/app/
+├── app.component.ts        # Shell raíz (ion-app + router-outlet)
+├── app.routes.ts           # Rutas (lazy load + authGuard)
+├── guards/
+│   └── auth.guard.ts       # Protege /profile y /requests
+├── services/               # Acceso a datos (Supabase) y estado local
+│   ├── supabase.service.ts     # Cliente único de Supabase
+│   ├── auth.service.ts         # Sesión, login, registro, rate limiting
+│   ├── profile.service.ts      # Perfil propio (persona + faceta tutor)
+│   ├── teacher.service.ts      # Catálogo de tutores (+ fallback a mocks)
+│   ├── tutor-profile.service.ts# Editar/publicar perfil tutor (RPCs)
+│   ├── subject.service.ts      # Catálogo de ramos
+│   ├── booking.service.ts      # Reservas
+│   ├── favorites.service.ts    # Favoritos (localStorage)
+│   └── storage.service.ts      # Wrapper de localStorage
+├── api/
+│   ├── academic-catalog-api.service.ts  # campus/facultad/carrera (Supabase)
+│   └── dtos/
+├── models/                 # Interfaces de dominio
+├── data/mock-teachers.ts   # Fallback offline del catálogo
+├── utils/                  # format.util, rate-limiter
+├── testing/                # Soporte de tests de integración
+├── components/             # header, hero, teacher-card/grid/modal,
+│                           # schedule-calendar, tutor-editor
+└── pages/                  # home, login, register, profile, requests
 ```
 
 ---
 
 ## Arquitectura
 
-La aplicación sigue una separación clara de responsabilidades
-(**compartimentalización**): el dominio, los datos, la lógica de acceso y la
-presentación viven en capas distintas.
-
-### Modelos
-
-`src/app/models/teacher.model.ts` define las interfaces del dominio, sin lógica:
-
-- `Teacher` — profesor (nombre, carrera, año, rating, ramos, contacto,
-  disponibilidad, reseñas…).
-- `Review` — reseña de un estudiante.
-- `DayAvailability` / `TimeSlot` — disponibilidad por día y hora.
-- `Contact` / `ContactType` — método de contacto preferido (`email` | `phone`).
-
-### Servicio de datos y fallback offline
-
-`src/app/services/teacher.service.ts` es la **única fuente de verdad** de la app
-y centraliza el acceso a datos:
-
-- Intenta cargar los profesores desde el backend
-  (`${environment.apiUrl}/teachers`) con `HttpClient`.
-- Si **no hay `apiUrl`** configurada, o la petición **falla**, cae
-  automáticamente a los datos mock locales (`catchError`).
-- Cachea el resultado con `shareReplay` para no repetir la petición en cada
-  búsqueda.
-- Expone:
-  - `getTeachers()` → todos los profesores.
-  - `searchTeachers({ query, subject })` → profesores filtrados por texto libre
-    y/o ramo, aplicado en el cliente.
-
-### Componentes
-
-Todos son **standalone** (no usan `NgModule`), con entradas/salidas explícitas:
-
-| Componente | Inputs | Outputs | Responsabilidad |
-|------------|--------|---------|-----------------|
-| `HeaderComponent` | — | — | Logo / barra superior fija. |
-| `HeroComponent` | `activeFilter` | `search`, `filterChange` | Título, buscador y chips de filtros rápidos. |
-| `TeacherCardComponent` | `teacher` | `select` | Tarjeta individual; accesible vía teclado. |
-| `TeacherGridComponent` | `teachers`, `isLoading` | `teacherSelect` | Grilla, skeletons de carga y estado "sin resultados". |
-| `TeacherModalComponent` | `teacher`, `isOpen` | `closed` | Ficha completa en un `ion-modal`; contacto y agenda. |
-| `ScheduleCalendarComponent` | `availability` | — | Calendario de 2 semanas + selección y confirmación de hora. |
-
-### Página
-
-`src/app/pages/home/home.page.ts` orquesta los componentes y mantiene el estado
-de la vista (texto de búsqueda, filtro activo, carga, profesor seleccionado y
-apertura del modal). Reacciona a los eventos del `Hero` y el `TeacherGrid`,
-consulta al `TeacherService` y abre/cierra el `TeacherModal`. Se carga de forma
-_lazy_ desde `app.routes.ts`.
-
-### Utilidades
-
-`src/app/utils/format.util.ts` agrupa funciones puras reutilizadas por varios
-componentes (iniciales de un nombre, formateo de fechas en español, nombre/
-número de día), evitando duplicación.
+- **Componentes standalone** (sin `NgModule`), con inputs/outputs explícitos y
+  signals donde aplica.
+- **Servicios como única fuente de verdad**: cada servicio encapsula su acceso a
+  Supabase y expone `Observable`s a los componentes; la UI no conoce Supabase.
+- **`profiles` es el centro del modelo**: representa a la persona autenticada.
+  Ser tutor es una **faceta** (fila 1:1 en `teachers`), no un rol aparte.
+- **Catálogo de tutores** (`teacher.service.ts`): consulta anidada a Supabase
+  (tutor + perfil + ramos + disponibilidad + reseñas), filtra a los `active` con
+  ramos y **omite el contacto**. Si la consulta falla, cae a `MOCK_TEACHERS`.
+- **Disponibilidad**: el tutor define un **patrón semanal** que se guarda en
+  `teachers.weekly_availability` y la base lo **expande** a fechas concretas en
+  `availability_slots` (próximas 2 semanas), que es lo que consume el calendario.
 
 ---
 
-## Mock API local y backend
+## Autenticación y seguridad
 
-En desarrollo la app apunta a una mock API local en `http://localhost:3000/api`.
-Levántala con:
+- **Supabase Auth** con email/contraseña; la sesión se hidrata y observa con
+  signals en `AuthService`.
+- **Dominio `@udd.cl`** validado en el cliente (login/registro) y forzado en la
+  base con un trigger `BEFORE INSERT` sobre `auth.users`.
+- **Rate limiting** de 1 intento cada 10 s para login y registro
+  (`src/app/utils/rate-limiter.ts`), como barrera de UX/anti-spam.
+- **RLS** en todas las tablas; el contacto del tutor se oculta vía _grants_ por
+  columna y solo se accede por RPC `SECURITY DEFINER`.
+- **Route guards** (`authGuard`) en `/profile` y `/requests`.
+
+---
+
+## Publicación de tutores
+
+Desde **Perfil → "Tutorías"**, el `TutorEditorComponent` permite definir precio,
+ramos, contacto y la grilla de disponibilidad semanal. Al guardar:
+
+1. `TutorProfileService.saveTutorProfile()` llama al RPC `save_tutor_profile`.
+2. El RPC crea/actualiza la ficha en `teachers`, reemplaza sus ramos, guarda el
+   patrón semanal y lo materializa en `availability_slots`.
+3. Si el perfil está **completo** (precio + contacto + ≥1 ramo + ≥1 bloque)
+   queda `active` (publicado y visible en el catálogo); si no, `incomplete`.
+
+---
+
+## Pruebas
+
+Dos niveles (detalle en [`docs/testing.md`](docs/testing.md)):
 
 ```bash
-npm run api
+npm test          # unitarios (jsdom, Supabase mockeado) — offline
+npm run test:int  # integración (node) contra el Supabase REAL
+npm run test:all  # ambos
 ```
 
-Endpoints disponibles:
-
-| Método | Ruta | Uso |
-|--------|------|-----|
-| `GET` | `/api/health` | Healthcheck de la mock API. |
-| `POST` | `/api/auth/register` | Crea una cuenta estudiante/tutor. |
-| `POST` | `/api/auth/login` | Inicia sesión. |
-| `POST` | `/api/auth/logout` | Cierra sesión. |
-| `GET` | `/api/auth/me` | Usuario autenticado. |
-| `GET` | `/api/campuses` | Campus UDD disponibles. |
-| `GET` | `/api/faculties` | Facultades por campus (`?campus_id=...`). |
-| `GET` | `/api/careers` | Carreras por facultad y campus (`?faculty_id=...&campus_id=...`). |
-| `GET` | `/api/teachers` | Listado de tutores. Acepta `q` y `subject`. |
-| `GET` | `/api/teachers/:id` | Detalle de un tutor. |
-| `GET` | `/api/teachers/:id/availability` | Disponibilidad de un tutor. |
-| `GET` | `/api/subjects` | Ramos disponibles. |
-| `GET` | `/api/bookings` | Reservas creadas en memoria. |
-| `POST` | `/api/bookings` | Crea una solicitud `pending` y bloquea el horario. |
-| `PATCH` | `/api/bookings/:id/accept` | Acepta una solicitud. |
-| `PATCH` | `/api/bookings/:id/reject` | Rechaza una solicitud y libera el horario. |
-| `PATCH` | `/api/bookings/:id/cancel` | Cancela una solicitud/reserva y libera el horario. |
-| `GET` | `/api/notifications` | Notificaciones simuladas en memoria. |
-
-Body mínimo para crear una reserva:
-
-```json
-{
-  "teacher_id": "1",
-  "date": "2026-06-20",
-  "hour": "10:00",
-  "student_first_name": "Josefa",
-  "student_last_name": "Perez",
-  "student_admission_year": "2023",
-  "student_email": "josefa.perez@udd.cl",
-  "student_campus_id": "campus-stgo",
-  "student_faculty_id": "fac-economia-negocios-stgo",
-  "student_career_id": "career-stgo-economia-negocios-ing-comercial"
-}
-```
-
-Las solicitudes quedan en estado `pending`, bloquean temporalmente el horario y
-deben ser aceptadas o rechazadas por la contraparte.
-
-El frontend consume DTOs de API en `snake_case` y los adapta al modelo de UI con
-los mappers de `src/app/api/mappers`, por lo que un backend real puede cambiar
-su formato sin afectar los componentes.
-
-Para conectarla a una API real, edita `src/environments/environment.ts`:
-
-```ts
-export const environment = {
-  production: false,
-  apiUrl: 'https://mi-backend.com/api',
-  useMocks: false,
-};
-```
-
-Si la API no responde y `useMocks` está activo, la app cae a los mocks locales de
-TypeScript para no quedar en blanco durante desarrollo.
-
----
-
-## Flujo de datos
-
-```
-Usuario
-  │  escribe / filtra / selecciona
-  ▼
-HomePage (estado de la vista)
-  │  searchTeachers({ query, subject })
-  ▼
-TeacherService ──► ¿hay apiUrl?
-  │                   ├─ sí → HTTP GET /teachers ─┐
-  │                   └─ no ───────────────────────┤
-  │                                                ▼
-  │                          (error / vacío) → MOCK_TEACHERS
-  ▼
-Teacher[] filtrado ──► TeacherGrid ──► TeacherCard
-                                  └──► TeacherModal ──► ScheduleCalendar
-```
-
----
-
-## Estilos y diseño
-
-- El diseño del mockup original se preservó fielmente: indigo de marca
-  (`#4F46E5`), avatares en lima (`#84CC16`), bordes negros marcados, skeletons
-  animados y transiciones.
-- La paleta vive como **design tokens** en `src/theme/variables.scss` y se
-  consume con variables CSS (`var(--brand-primary)`, etc.), también mapeadas a
-  las variables de Ionic (`--ion-color-primary`).
-- Tipografía **Inter** cargada en `global.scss`.
-- Cada componente tiene su propio `.scss` encapsulado (los CSS modules de React
-  se portaron uno a uno).
+- **Unitarios** (`*.spec.ts`): lógica pura y servicios con Supabase mockeado.
+- **Integración** (`*.int.spec.ts`): instancian los servicios reales y verifican
+  las APIs en vivo (catálogo, tutores, reservas/RLS, ramos, RPCs del tutor).
 
 ---
 
@@ -313,25 +236,37 @@ Teacher[] filtrado ──► TeacherGrid ──► TeacherCard
 
 | Script | Acción |
 |--------|--------|
-| `npm start` / `npm run dev` | Servidor de desarrollo (`ng serve`) en `http://localhost:4200`. |
-| `npm run api` | Mock API local en `http://localhost:3000/api`. |
+| `npm start` / `npm run dev` | Servidor de desarrollo en `http://localhost:4200`. |
 | `npm run build` | Build de producción en `/www`. |
-| `npm run watch` | Build en modo watch (desarrollo). |
-| `npm run ng -- <cmd>` | Acceso directo al CLI de Angular. |
+| `npm run watch` | Build en modo watch. |
+| `npm test` / `npm run test:watch` | Pruebas unitarias. |
+| `npm run test:int` | Pruebas de integración (Supabase real). |
+| `npm run test:all` | Unitarias + integración. |
+| `npm run api` | Mock API local _(legado)_ en `:3000`; hoy sirve solo como fuente del seed del catálogo, no se consume en runtime. |
 
 ---
 
-## Decisiones de la migración
+## Estado conocido y pendientes
 
-- **React → Angular standalone**: se eliminó todo el andamiaje de React/Vite
-  (`main.tsx`, CSS modules, componentes shadcn/ui) y se reconstruyó con
-  componentes standalone de Angular 19, el patrón recomendado actualmente.
-- **Estado local con servicios**: en lugar de hooks (`useState`, `useMemo`), el
-  estado de la vista vive en la `HomePage` y el acceso a datos en un servicio
-  inyectable, separando presentación de lógica.
-- **Mock-first con fallback**: la lógica de "si no hay backend, mostrar mocks"
-  del enunciado se implementó en el servicio con `catchError`, de modo
-  transparente para los componentes.
-- **UI nativa de Ionic donde aporta**: `ion-app`, `ion-content`, `ion-modal` y
-  `ion-toast` para una mejor experiencia móvil, conservando el HTML/CSS propio
-  donde el diseño debía mantenerse idéntico.
+- ⚠️ **Registro por correo desactivado** en el proyecto Supabase
+  (`Email signups are disabled`). Para que `/register` cree cuentas, actívalo en
+  Dashboard → Authentication → Providers → Email. Mientras tanto, usa una cuenta
+  existente o el tutor demo.
+- Las migraciones se aplican **a mano** en el SQL Editor (orden fase-1 → fase-5).
+  Si una RPC devuelve `404 / PGRST202`, falta aplicar el `.sql` correspondiente.
+- La **ventana rodante** de disponibilidad se refresca al guardar el perfil; para
+  que avance sola cada día se puede activar el job `pg_cron` documentado en
+  `fase-5-tutor-publishing.sql`.
+- Sin tutores `active`, el catálogo muestra los datos mock de respaldo.
+
+---
+
+## Documentación adicional
+
+| Documento | Contenido |
+|-----------|-----------|
+| [`docs/supabase-schema.md`](docs/supabase-schema.md) | Esquema completo: tablas, RLS, triggers y RPCs. |
+| [`docs/testing.md`](docs/testing.md) | Estrategia de pruebas (unitarias e integración). |
+| [`docs/audit.md`](docs/audit.md) | Auditoría del sistema (seguridad, código muerto). |
+| [`docs/api-contract.md`](docs/api-contract.md) · [`docs/differences.md`](docs/differences.md) | Contrato REST de referencia y su contraste con Supabase. |
+| [`docs/sql/`](docs/sql/) | Migraciones SQL ejecutables. |
