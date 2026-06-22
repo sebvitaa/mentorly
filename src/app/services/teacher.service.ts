@@ -17,9 +17,13 @@ export interface TeacherFilters {
   subject?: string | null;
 }
 
-/** Consulta anidada: tutor + perfil + ramos + disponibilidad + reseñas. */
+/**
+ * Consulta anidada: tutor + perfil + ramos + disponibilidad + reseñas.
+ * El contacto (contact_type/contact_value) NO se incluye: el catálogo público
+ * no debe exponerlo (se oculta hasta que el tutor confirme una reserva).
+ */
 const TEACHER_SELECT = `
-  id, about, price_min, price_max, contact_type, contact_value, rating, review_count,
+  id, about, price_min, price_max, rating, review_count,
   profile:profiles ( full_name, career, year, avatar_url ),
   teacher_subjects ( subjects ( name ) ),
   availability_slots ( date, hour, available ),
@@ -90,7 +94,7 @@ export class TeacherService {
         .filter((name: string | undefined): name is string => !!name),
       avatar: profile.avatar_url ?? undefined,
       about: row.about ?? '',
-      contact: { type: row.contact_type, value: row.contact_value },
+      // contact se omite a propósito (oculto hasta confirmar reserva).
       availability: this.mapAvailability(row.availability_slots ?? []),
       reviews: this.mapReviews(row.reviews ?? []),
     };

@@ -33,7 +33,11 @@ export interface Teacher {
   subjects: string[];
   avatar?: string;
   about: string;
-  contact: Contact;
+  /**
+   * Contacto del tutor. Opcional: el catálogo público NO lo expone (se oculta
+   * hasta que el tutor confirme una reserva). Los datos mock sí lo incluyen.
+   */
+  contact?: Contact;
   availability: DayAvailability[];
   reviews: Review[];
 }

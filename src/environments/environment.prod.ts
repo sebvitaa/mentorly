@@ -1,15 +1,6 @@
 export const environment = {
   production: true,
 
-  /** (Legacy) Base URL de un backend REST. Ya no se usa: los datos vienen de Supabase. */
-  apiUrl: '',
-
-  /**
-   * Si no hay `apiUrl`, los servicios REST (reservas, catálogo académico) caen
-   * a datos mock en TypeScript en lugar de fallar.
-   */
-  useMocks: true,
-
   /** Conexión a Supabase (proyecto Mentorly UDD). */
   supabase: {
     url: 'https://jrhzzawcjvsxxfnikkkv.supabase.co',

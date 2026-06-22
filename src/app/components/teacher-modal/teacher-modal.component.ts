@@ -41,16 +41,6 @@ export class TeacherModalComponent {
     };
   }
 
-  contact(): void {
-    if (!this.teacher) {
-      return;
-    }
-    const { type, value } = this.teacher.contact;
-    const href =
-      type === 'email' ? `mailto:${value}` : `tel:${value.replace(/\s+/g, '')}`;
-    window.open(href, '_self');
-  }
-
   isFavorite(): boolean {
     return this.teacher ? this.favoritesService.isFavorite(this.teacher.id) : false;
   }

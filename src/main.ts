@@ -1,5 +1,4 @@
 import { bootstrapApplication } from '@angular/platform-browser';
-import { provideHttpClient } from '@angular/common/http';
 import { RouteReuseStrategy, provideRouter } from '@angular/router';
 import {
   IonicRouteStrategy,
@@ -14,6 +13,5 @@ bootstrapApplication(AppComponent, {
     { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
     provideIonicAngular(),
     provideRouter(routes),
-    provideHttpClient(),
   ],
 }).catch((err) => console.error(err));

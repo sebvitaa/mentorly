@@ -7,6 +7,19 @@ Derivado del modelo de dominio actual (`src/app/models/teacher.model.ts`), los d
 > **Importante:** lee la sección [Supuestos a validar](#supuestos-a-validar). Tomé varias
 > decisiones de diseño; si alguna no calza, avísame y ajusto el esquema.
 
+> **Estado por fases (PLAN.md).** El SQL ejecutable vive en `docs/sql/` y se aplica en orden:
+> - **Fase 1** — `docs/sql/fase-1-academic-catalog.sql`: catálogo académico
+>   (`campuses`, `faculties`, `careers`) + columnas `campus_id/faculty_id/career_id`
+>   en `profiles` + extensión del trigger `handle_new_user`.
+> - **Fase 2** — `docs/sql/fase-2-bookings.sql`: reservas (`bookings`) + RLS.
+> - **Fase 3** — `docs/sql/fase-3-hardening.sql`: fuerza dominio `@udd.cl` server-side,
+>   oculta a nivel BD las columnas de contacto del tutor (`contact_type/contact_value`)
+>   y reafirma RLS en todo el esquema.
+>
+> Notas de modelo: `faculties` **no** tiene `campus_id` (una facultad puede existir en
+> varios campus); las facultades por campus se derivan de `careers`. La tabla `bookings`
+> **no** duplica datos del alumno: viven en `profiles` (`student_id` → `profiles`).
+
 ---
 
 ## 1. Resumen del modelo
@@ -26,6 +39,8 @@ como tutor (ficha en `teachers`).
 | `teacher_subjects` | Ramos que el tutor **enseña** (N:N tutor ↔ ramo) |
 | `availability_slots` | Bloques de horario del tutor (fecha + hora + disponible) |
 | `reviews` | Reseñas que un perfil deja a un tutor |
+| `campuses` / `faculties` / `careers` | Catálogo académico UDD (Fase 1) |
+| `bookings` | Reservas que un estudiante hace a un tutor (Fase 2) |
 
 ---
 
