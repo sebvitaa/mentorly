@@ -21,6 +21,8 @@ export class HeaderComponent {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
 
+  isMobileMenuOpen = false;
+
   /** Usuario actual (signal) y su nombre para mostrar. */
   readonly user = this.authService.user;
   readonly displayName = computed(() => {
@@ -28,7 +30,16 @@ export class HeaderComponent {
     return (metadata['full_name'] as string | undefined)?.trim() || 'Mi cuenta';
   });
 
+  toggleMobileMenu(): void {
+    this.isMobileMenuOpen = !this.isMobileMenuOpen;
+  }
+
+  closeMobileMenu(): void {
+    this.isMobileMenuOpen = false;
+  }
+
   async logout(): Promise<void> {
+    this.closeMobileMenu();
     await this.authService.signOut();
     await this.router.navigate(['/home']);
   }

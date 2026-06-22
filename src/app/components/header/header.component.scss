@@ -23,15 +23,52 @@
   cursor: pointer;
 }
 
-@media (max-width: 640px) {
+.desktop-nav {
+  display: flex;
+}
+
+.mobile-nav-toggle,
+.mobile-menu {
+  display: none;
+}
+
+.mobile-menu {
+  background: var(--brand-surface);
+  border-top: 1px solid rgba(17, 24, 39, 0.12);
+  padding: 8px 12px 12px;
+
+  ion-button {
+    --color: var(--brand-ink);
+    --justify-content: flex-start;
+    display: block;
+    width: 100%;
+    font-family: var(--app-font);
+    font-weight: 700;
+    text-align: left;
+  }
+}
+
+@media (max-width: 768px) {
   .app-header {
     ion-toolbar {
       --padding-start: 12px;
       --padding-end: 12px;
     }
+  }
 
-    ion-button {
-      font-size: 12px;
-    }
+  .logo {
+    font-size: 17px;
+  }
+
+  .desktop-nav {
+    display: none;
+  }
+
+  .mobile-nav-toggle {
+    display: flex;
+  }
+
+  .mobile-menu {
+    display: block;
   }
 }
