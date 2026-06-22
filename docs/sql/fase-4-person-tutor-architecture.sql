@@ -100,6 +100,7 @@ end $$;
 -- Nota: la política existente "lectura publica teachers" (si existe) permite
 -- ver todos; la reemplazamos por una más restrictiva.
 drop policy if exists "lectura publica teachers" on public.teachers;
+drop policy if exists "ver tutores activos" on public.teachers;
 create policy "ver tutores activos" on public.teachers
   for select using (status = 'active');
 
