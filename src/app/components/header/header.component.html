@@ -1,7 +1,10 @@
 <ion-header class="app-header">
   <ion-toolbar>
-    <ion-title class="logo" routerLink="/home">Mentorly UDD</ion-title>
-    <ion-buttons slot="end">
+    <ion-title class="logo" routerLink="/home" (click)="closeMobileMenu()">
+      Mentorly UDD
+    </ion-title>
+
+    <ion-buttons slot="end" class="desktop-nav">
       <ion-button routerLink="/home">Inicio</ion-button>
       <ion-button routerLink="/requests">Mis solicitudes</ion-button>
 
@@ -13,5 +16,41 @@
         <ion-button routerLink="/register">Crear cuenta</ion-button>
       }
     </ion-buttons>
+
+    <ion-buttons slot="end" class="mobile-nav-toggle">
+      <ion-button
+        type="button"
+        aria-label="Abrir menú de navegación"
+        [attr.aria-expanded]="isMobileMenuOpen"
+        (click)="toggleMobileMenu()"
+      >
+        Menú
+      </ion-button>
+    </ion-buttons>
   </ion-toolbar>
+
+  @if (isMobileMenuOpen) {
+    <nav class="mobile-menu" aria-label="Navegación principal">
+      <ion-button routerLink="/home" fill="clear" (click)="closeMobileMenu()">
+        Inicio
+      </ion-button>
+      <ion-button routerLink="/requests" fill="clear" (click)="closeMobileMenu()">
+        Mis solicitudes
+      </ion-button>
+
+      @if (user(); as user) {
+        <ion-button routerLink="/profile" fill="clear" (click)="closeMobileMenu()">
+          {{ displayName() }}
+        </ion-button>
+        <ion-button fill="clear" (click)="logout()">Cerrar sesión</ion-button>
+      } @else {
+        <ion-button routerLink="/login" fill="clear" (click)="closeMobileMenu()">
+          Iniciar sesión
+        </ion-button>
+        <ion-button routerLink="/register" fill="clear" (click)="closeMobileMenu()">
+          Crear cuenta
+        </ion-button>
+      }
+    </nav>
+  }
 </ion-header>
