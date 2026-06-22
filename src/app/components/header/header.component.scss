@@ -15,12 +15,18 @@
   }
 }
 
-.logo {
+.brand {
+  min-width: 0;
+}
+
+.brand-button {
+  --color: var(--brand-primary);
+  --padding-start: 0;
+  --padding-end: 0;
   font-family: var(--app-font);
   font-weight: 700;
   font-size: 20px;
-  color: var(--brand-primary);
-  cursor: pointer;
+  text-transform: none;
 }
 
 .desktop-nav {
@@ -48,7 +54,7 @@
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .app-header {
     ion-toolbar {
       --padding-start: 12px;
@@ -56,7 +62,7 @@
     }
   }
 
-  .logo {
+  .brand-button {
     font-size: 17px;
   }
 

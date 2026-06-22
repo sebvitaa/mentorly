@@ -1,8 +1,15 @@
 <ion-header class="app-header">
   <ion-toolbar>
-    <ion-title class="logo" routerLink="/home" (click)="closeMobileMenu()">
-      Mentorly UDD
-    </ion-title>
+    <ion-buttons slot="start" class="brand">
+      <ion-button
+        class="brand-button"
+        routerLink="/home"
+        fill="clear"
+        (click)="closeMobileMenu()"
+      >
+        Mentorly UDD
+      </ion-button>
+    </ion-buttons>
 
     <ion-buttons slot="end" class="desktop-nav">
       <ion-button routerLink="/home">Inicio</ion-button>

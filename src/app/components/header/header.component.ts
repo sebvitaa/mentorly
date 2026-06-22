@@ -4,7 +4,6 @@ import {
   IonButton,
   IonButtons,
   IonHeader,
-  IonTitle,
   IonToolbar,
 } from '@ionic/angular/standalone';
 
@@ -13,7 +12,7 @@ import { AuthService } from '../../services/auth.service';
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [IonButton, IonButtons, IonHeader, IonTitle, IonToolbar, RouterLink],
+  imports: [IonButton, IonButtons, IonHeader, IonToolbar, RouterLink],
   templateUrl: './header.component.html',
   styleUrl: './header.component.scss',
 })
