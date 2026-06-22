@@ -192,7 +192,7 @@ export class ProfilePage implements OnInit {
     this.profileService
       .updateMyProfile({
         fullName: this.editForm.fullName.trim(),
-        admissionYear: this.editForm.admissionYear.trim(),
+        admissionYear: String(this.editForm.admissionYear ?? '').trim(),
         campusId: this.editForm.campusId,
         facultyId: this.editForm.facultyId,
         careerId: this.editForm.careerId,
@@ -247,7 +247,7 @@ export class ProfilePage implements OnInit {
     this.profile = {
       ...this.profile,
       fullName: this.editForm.fullName.trim(),
-      admissionYear: this.editForm.admissionYear.trim(),
+      admissionYear: String(this.editForm.admissionYear ?? '').trim(),
       campusId: this.editForm.campusId,
       campusName:
         this.campuses.find((c) => c.id === this.editForm.campusId)?.name ??
@@ -262,7 +262,7 @@ export class ProfilePage implements OnInit {
   }
 
   private isAdmissionYearValid(): boolean {
-    const year = Number(this.editForm.admissionYear.trim());
+    const year = Number(String(this.editForm.admissionYear ?? '').trim());
     return Number.isInteger(year) && year >= 1920 && year <= this.currentYear;
   }
 
