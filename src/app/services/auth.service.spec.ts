@@ -27,6 +27,9 @@ const SIGNUP_DATA: SignUpData = {
   fullName: 'Ada Lovelace',
   career: 'Ingeniería Civil',
   year: '2023',
+  campusId: 'campus-stgo',
+  facultyId: 'fac-ingenieria-stgo',
+  careerId: 'career-stgo-ingenieria-ing-civil-industrial',
 };
 
 describe('AuthService', () => {
@@ -72,6 +75,9 @@ describe('AuthService', () => {
           full_name: 'Ada Lovelace',
           career: 'Ingeniería Civil',
           year: '2023',
+          campus_id: 'campus-stgo',
+          faculty_id: 'fac-ingenieria-stgo',
+          career_id: 'career-stgo-ingenieria-ing-civil-industrial',
         },
       },
     });

@@ -10,9 +10,14 @@ export interface SignUpData {
   email: string;
   password: string;
   fullName: string;
+  /** Nombre legible de la carrera (se guarda junto al IDs de referencia). */
   career: string;
   /** Año que cursa, ej. "3er año". */
   year: string;
+  /** IDs del catálogo académico (referencias a campuses/faculties/careers). */
+  campusId: string;
+  facultyId: string;
+  careerId: string;
 }
 
 /**
@@ -73,6 +78,9 @@ export class AuthService {
           full_name: data.fullName,
           career: data.career,
           year: data.year,
+          campus_id: data.campusId,
+          faculty_id: data.facultyId,
+          career_id: data.careerId,
         },
       },
     });

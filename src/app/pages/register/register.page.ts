@@ -116,6 +116,9 @@ export class RegisterPage implements OnInit {
         fullName: `${this.form.firstName.trim()} ${this.form.lastName.trim()}`.trim(),
         career: this.selectedCareerName(),
         year: this.form.admissionYear.trim(),
+        campusId: this.form.campusId,
+        facultyId: this.form.facultyId,
+        careerId: this.form.careerId,
       });
 
       if (error) {
