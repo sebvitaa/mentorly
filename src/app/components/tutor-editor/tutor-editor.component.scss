@@ -69,6 +69,52 @@
   }
 }
 
+.subjects-modal {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 1rem;
+  overflow: hidden;
+}
+
+.subjects-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+
+  h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+
+  .close-button {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+    color: var(--ion-color-medium);
+  }
+}
+
+.subjects-list {
+  flex: 1 1 0;
+  overflow-y: auto;
+  margin: 0.5rem 0;
+}
+
+.add-subject {
+  flex-shrink: 0;
+
+  h4 {
+    margin: 0.75rem 0 0.5rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+  }
+}
+
 .slot-cell {
   width: 100%;
   min-width: 32px;
