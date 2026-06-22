@@ -6,9 +6,7 @@
       <ion-button routerLink="/requests">Mis solicitudes</ion-button>
 
       @if (user(); as user) {
-        <ion-button class="user-button" disabled="true">
-          {{ displayName() }}
-        </ion-button>
+        <ion-button routerLink="/profile">{{ displayName() }}</ion-button>
         <ion-button (click)="logout()">Cerrar sesión</ion-button>
       } @else {
         <ion-button routerLink="/login">Iniciar sesión</ion-button>

@@ -1,0 +1,96 @@
+.profile-page {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 40px 24px 64px;
+}
+
+.page-hero {
+  margin-bottom: 32px;
+
+  .eyebrow {
+    font-family: var(--app-font);
+    font-weight: 800;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--brand-primary);
+    margin: 0 0 8px;
+  }
+
+  h2 {
+    font-family: var(--app-font);
+    font-weight: 800;
+    font-size: clamp(28px, 5vw, 44px);
+    color: var(--brand-ink);
+    margin: 0 0 12px;
+  }
+
+  p {
+    max-width: 720px;
+    font-family: var(--app-font);
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--brand-muted);
+    margin: 0;
+  }
+}
+
+.section-block {
+  margin-top: 32px;
+}
+
+.section-heading {
+  margin-bottom: 16px;
+
+  h3 {
+    font-family: var(--app-font);
+    font-weight: 800;
+    font-size: 22px;
+    color: var(--brand-ink);
+    margin: 0;
+  }
+}
+
+.state-card,
+.data-card {
+  border: 2px solid var(--brand-ink);
+  border-radius: 12px;
+  box-shadow: none;
+  margin: 0;
+}
+
+.card-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+ion-card-title {
+  font-family: var(--app-font);
+  font-weight: 800;
+  color: var(--brand-ink);
+}
+
+ion-item {
+  --background: transparent;
+  --padding-start: 0;
+  --inner-padding-end: 0;
+}
+
+ion-text {
+  font-family: var(--app-font);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+@media (max-width: 640px) {
+  .profile-page {
+    padding: 28px 16px 48px;
+  }
+
+  .card-title-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+}

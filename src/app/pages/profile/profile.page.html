@@ -1,0 +1,146 @@
+<app-header />
+
+<ion-content [fullscreen]="true">
+  <main class="profile-page">
+    <section class="page-hero">
+      <p class="eyebrow">Mi cuenta</p>
+      <h2>Perfil</h2>
+      <p>Tus datos personales y académicos en Mentorly UDD.</p>
+    </section>
+
+    @if (isLoading) {
+      <ion-card class="state-card">
+        <ion-card-content>
+          <ion-text color="medium">Cargando perfil…</ion-text>
+        </ion-card-content>
+      </ion-card>
+    } @else if (!profile) {
+      <ion-card class="state-card">
+        <ion-card-content>
+          <ion-text color="medium">
+            No pudimos cargar tu perfil. Asegúrate de haber iniciado sesión.
+          </ion-text>
+        </ion-card-content>
+      </ion-card>
+    } @else {
+      <section class="section-block">
+        <div class="section-heading">
+          <h3>Datos personales</h3>
+        </div>
+
+        <ion-card class="data-card">
+          <ion-card-content>
+            <ion-list lines="none">
+              <ion-item>
+                <ion-label>
+                  <strong>Nombre</strong>
+                  <p>{{ profile.fullName }}</p>
+                </ion-label>
+              </ion-item>
+              <ion-item>
+                <ion-label>
+                  <strong>Correo</strong>
+                  <p>{{ profile.email }}</p>
+                </ion-label>
+              </ion-item>
+              <ion-item>
+                <ion-label>
+                  <strong>Año de ingreso</strong>
+                  <p>{{ profile.admissionYear }}</p>
+                </ion-label>
+              </ion-item>
+            </ion-list>
+          </ion-card-content>
+        </ion-card>
+      </section>
+
+      <section class="section-block">
+        <div class="section-heading">
+          <h3>Datos académicos</h3>
+        </div>
+
+        <ion-card class="data-card">
+          <ion-card-content>
+            <ion-list lines="none">
+              <ion-item>
+                <ion-label>
+                  <strong>Campus</strong>
+                  <p>{{ profile.campusName }}</p>
+                </ion-label>
+              </ion-item>
+              <ion-item>
+                <ion-label>
+                  <strong>Facultad</strong>
+                  <p>{{ profile.facultyName }}</p>
+                </ion-label>
+              </ion-item>
+              <ion-item>
+                <ion-label>
+                  <strong>Carrera</strong>
+                  <p>{{ profile.careerName }}</p>
+                </ion-label>
+              </ion-item>
+            </ion-list>
+          </ion-card-content>
+        </ion-card>
+      </section>
+
+      <section class="section-block">
+        <div class="section-heading">
+          <h3>Tutorías</h3>
+        </div>
+
+        <ion-card class="data-card">
+          <ion-card-header>
+            <div class="card-title-row">
+              <ion-card-title>Estado tutor</ion-card-title>
+              <ion-badge [color]="teacherStatusColor(profile.teacherStatus)">
+                {{ teacherStatusLabel(profile.teacherStatus) }}
+              </ion-badge>
+            </div>
+          </ion-card-header>
+          <ion-card-content>
+            @if (profile.teacherStatus === 'none') {
+              <ion-text color="medium">
+                No estás ofreciendo tutorías. Puedes activar esta opción desde el
+                registro o más adelante.
+              </ion-text>
+            } @else if (profile.teacherStatus === 'incomplete') {
+              <ion-text color="medium">
+                Marcaste que quieres ofrecer tutorías. Próximamente podrás
+                completar tu perfil tutor (bio, ramos, precio y disponibilidad).
+              </ion-text>
+            } @else if (profile.teacherStatus === 'active') {
+              <ion-text color="medium">
+                Tu perfil tutor está activo y visible en el catálogo público.
+              </ion-text>
+            } @else if (profile.teacherStatus === 'pending') {
+              <ion-text color="medium">
+                Completaste tu perfil tutor y está en revisión.
+              </ion-text>
+            } @else if (profile.teacherStatus === 'inactive') {
+              <ion-text color="medium">
+                Tu perfil tutor está pausado. No apareces en el catálogo público.
+              </ion-text>
+            } @else if (profile.teacherStatus === 'rejected') {
+              <ion-text color="medium">
+                Tu perfil tutor fue rechazado. Contacta al equipo de Mentorly.
+              </ion-text>
+            }
+          </ion-card-content>
+        </ion-card>
+      </section>
+
+      <section class="section-block">
+        <ion-button
+          color="danger"
+          fill="outline"
+          expand="block"
+          (click)="logout()"
+        >
+          Cerrar sesión
+        </ion-button>
+      </section>
+    }
+  </main>
+</ion-content>

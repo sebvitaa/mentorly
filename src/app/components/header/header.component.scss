@@ -23,13 +23,6 @@
   cursor: pointer;
 }
 
-.user-button {
-  --color: var(--brand-muted);
-  opacity: 1;
-  cursor: default;
-  pointer-events: none;
-}
-
 @media (max-width: 640px) {
   .app-header {
     ion-toolbar {
