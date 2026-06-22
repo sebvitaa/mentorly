@@ -14,7 +14,7 @@ export function getInitials(name: string): string {
 
 /** Long localized date, e.g. "15 de mayo de 2026". */
 export function formatLongDate(dateString: string): string {
-  return new Date(dateString).toLocaleDateString('es-CL', {
+  return toLocalDate(dateString).toLocaleDateString('es-CL', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -23,7 +23,7 @@ export function formatLongDate(dateString: string): string {
 
 /** Long localized date including weekday, e.g. "jueves, 15 de mayo de 2026". */
 export function formatFullDate(dateString: string): string {
-  return new Date(dateString).toLocaleDateString('es-CL', {
+  return toLocalDate(dateString).toLocaleDateString('es-CL', {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
@@ -68,12 +68,12 @@ export function formatDateTime(dateString: string): string {
 
 /** Short weekday label ("Lun", "Mar", …). */
 export function getDayName(dateString: string): string {
-  return ES_DAYS[new Date(dateString).getDay()];
+  return ES_DAYS[toLocalDate(dateString).getDay()];
 }
 
 /** Day-of-month number. */
 export function getDayNumber(dateString: string): number {
-  return new Date(dateString).getDate();
+  return toLocalDate(dateString).getDate();
 }
 
 /** Pesos chilenos con separador de miles, ej. 8000 → "$8.000". */
