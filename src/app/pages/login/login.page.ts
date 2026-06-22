@@ -5,7 +5,6 @@ import {
   IonButton,
   IonContent,
   IonInput,
-  IonLabel,
   IonNote,
   ToastController,
 } from '@ionic/angular/standalone';
