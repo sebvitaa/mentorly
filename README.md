@@ -10,6 +10,9 @@ precio, ramos, contacto y disponibilidad semanal.
 > _fallback_ a datos mock locales para que el catálogo no quede en blanco si
 > Supabase no responde.
 
+https://mentorly-ivory.vercel.app/
+
+
 ---
 
 ## Tabla de contenidos
