@@ -24,13 +24,17 @@ begin
   end if;
 
   -- Ficha de tutor (1:1 con el perfil; profile_id es unique).
+  -- status = 'active' para que sea visible en el catálogo (RLS "ver tutores activos").
   insert into public.teachers
-    (profile_id, about, price_min, price_max, contact_type, contact_value)
+    (profile_id, about, price_min, price_max, contact_type, contact_value, status)
   values
     (v_profile,
      'Tutor demo: ayudo con ramos de primer año, con paciencia y ejemplos prácticos.',
-     8000, 12000, 'email', v_email)
-  on conflict (profile_id) do update set about = excluded.about
+     8000, 12000, 'email', v_email, 'active')
+  on conflict (profile_id) do update
+    set about = excluded.about,
+        status = 'active',
+        updated_at = now()
   returning id into v_teacher;
 
   if v_teacher is null then

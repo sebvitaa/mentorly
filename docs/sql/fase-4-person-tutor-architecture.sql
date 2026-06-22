@@ -42,6 +42,11 @@ alter table public.teachers
 alter table public.teachers
   add column if not exists updated_at timestamptz not null default now();
 
+-- IMPORTANTE: la Fase 3 revocó el SELECT de tabla en `teachers` y lo concedió
+-- columna por columna (sin `status`, que aún no existía). El catálogo necesita
+-- leer/filtrar por `status`, así que concedemos SELECT sobre esa columna.
+grant select (status) on public.teachers to anon, authenticated;
+
 -- Asegurar 1:1 profile ↔ teacher (ya existe unique en profile_id; lo reforzamos).
 -- (No es estrictamente necesario, pero deja explícita la intención.)
 
