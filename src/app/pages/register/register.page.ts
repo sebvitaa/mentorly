@@ -115,10 +115,11 @@ export class RegisterPage implements OnInit {
         password: this.form.password,
         fullName: `${this.form.firstName.trim()} ${this.form.lastName.trim()}`.trim(),
         career: this.selectedCareerName(),
-        year: this.form.admissionYear.trim(),
+        admissionYear: this.form.admissionYear.trim(),
         campusId: this.form.campusId,
         facultyId: this.form.facultyId,
         careerId: this.form.careerId,
+        wantsToTeach: this.form.wantsToTeach,
       });
 
       if (error) {
@@ -130,7 +131,10 @@ export class RegisterPage implements OnInit {
         return;
       }
 
-      await this.presentToast('Cuenta creada. Bienvenido a Mentorly UDD.', 'primary');
+      const message = this.form.wantsToTeach
+        ? 'Cuenta creada. Te dejamos listo para completar tu perfil tutor.'
+        : 'Cuenta creada. Bienvenido a Mentorly UDD.';
+      await this.presentToast(message, 'primary');
       await this.router.navigate(['/home']);
     } catch (err) {
       const message =

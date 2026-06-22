@@ -15,6 +15,11 @@ Derivado del modelo de dominio actual (`src/app/models/teacher.model.ts`), los d
 > - **Fase 3** — `docs/sql/fase-3-hardening.sql`: fuerza dominio `@udd.cl` server-side,
 >   oculta a nivel BD las columnas de contacto del tutor (`contact_type/contact_value`)
 >   y reafirma RLS en todo el esquema.
+> - **Fase 4** — `docs/sql/fase-4-person-tutor-architecture.sql`: arquitectura
+>   persona/tutor. Renombra `profiles.year` → `admission_year`, agrega
+>   `teachers.status` (`incomplete|pending|active|inactive|rejected`) y
+>   `teachers.updated_at`, y extiende `handle_new_user` para crear la fila
+>   `teachers` cuando `wants_to_teach = true`. RLS lista solo tutores `active`.
 >
 > Notas de modelo: `faculties` **no** tiene `campus_id` (una facultad puede existir en
 > varios campus); las facultades por campus se derivan de `careers`. La tabla `bookings`
@@ -27,15 +32,16 @@ Derivado del modelo de dominio actual (`src/app/models/teacher.model.ts`), los d
 La app conecta **estudiantes UDD** con **tutores particulares** (que también son estudiantes UDD).
 
 El **centro del sistema es `profiles`**: representa al usuario logueado (vía Supabase Auth) e
-incluye su carrera, año y los **ramos que está cursando**. Un perfil puede, además, ofrecerse
-como tutor (ficha en `teachers`).
+incluye su carrera, año de ingreso y los **ramos que está cursando**. Un perfil puede, además, ofrecerse
+como tutor (ficha en `teachers`). **No existe un "rol student" persistido**: cualquier persona
+autenticada puede reservar. Ser tutor es una faceta adicional (fila 1:1 en `teachers`).
 
 | Tabla | Qué guarda |
 |-------|------------|
-| **`profiles`** | **Usuario UDD: carrera, año, ramos que cursa, avatar. Ligado a Supabase Auth.** |
+| **`profiles`** | **Persona UDD: carrera, año de ingreso, ramos que cursa, avatar. Ligado a Supabase Auth.** |
 | `profile_subjects` | Ramos que el usuario **está cursando** (N:N perfil ↔ ramo) |
 | `subjects` | Catálogo de ramos (Cálculo I, Programación, etc.) |
-| `teachers` | Ficha de tutoría de un perfil (precio, descripción, contacto) |
+| `teachers` | Ficha de tutoría de un perfil (precio, descripción, contacto, **estado**) |
 | `teacher_subjects` | Ramos que el tutor **enseña** (N:N tutor ↔ ramo) |
 | `availability_slots` | Bloques de horario del tutor (fecha + hora + disponible) |
 | `reviews` | Reseñas que un perfil deja a un tutor |
@@ -325,7 +331,9 @@ Con eso instalo `@supabase/supabase-js`, creo el cliente y reemplazo el `Teacher
 6. **Una reseña por perfil y por tutor** (`unique (teacher_id, author_id)`). *(Si permites varias
    reseñas del mismo usuario al mismo tutor, quito la restricción.)*
 
-7. **`year` como texto** (`"3er año"`) tanto en `profiles` como en la UI. *(Alternativa: entero 1–7.)*
+7. **`admission_year` como texto** (`"2023"`) en `profiles` y en la UI. Representa
+   el año de ingreso a la carrera. *(Antes era `year` tipo "3er año"; Fase 4 lo
+   renombra a `admission_year`.)*
 
 8. **El catálogo es de lectura pública**; crear/editar perfiles, ramos y reseñas requiere login.
 

@@ -77,28 +77,30 @@ Decision pendiente:
 
 - Proveedor de autenticacion: JWT propio, Firebase, Supabase, SSO universitario u otro.
 
-## 5. Roles
+## 5. Roles y facetas
 
-Un usuario puede actuar como estudiante, tutor o ambos.
+Mentorly no modela "estudiante" y "tutor" como dos tipos de usuario. Toda
+cuenta es una **persona** (`profiles`). Ser tutor es una **faceta adicional**
+(una fila 1:1 en `teachers`), no un rol base separado.
 
-Roles iniciales:
-
-| Rol | Descripcion |
-|-----|-------------|
-| `student` | Usuario que busca tutorias y crea reservas. |
-| `tutor` | Usuario que ofrece tutorias y gestiona disponibilidad/solicitudes. |
-| `admin` | Usuario que administra tutores, ramos y contenido del sistema. |
+| Concepto | Como se determina |
+|----------|-------------------|
+| Persona | Existe fila en `profiles` (creada automaticamente al registrarse). |
+| Estudiante | Cualquier persona autenticada puede reservar tutorias. No es un rol persistido. |
+| Tutor | Existe fila en `teachers` con `profile_id = profiles.id`. |
+| Admin | Permiso explicito aparte (no cubierto en esta fase). |
 
 Reglas:
 
-- Un usuario puede tener multiples roles.
-- Un estudiante tambien puede ser tutor.
+- Un usuario puede aprender y ensenar al mismo tiempo.
 - Un tutor tambien puede reservar clases con otros tutores.
+- El registro puede marcar "tambien quiero ofrecer tutorias"; en ese caso se
+  crea un perfil tutor en estado `incomplete` para completar onboarding despues.
 - Las acciones administrativas deben estar restringidas a `admin`.
 
 ## 6. Modelos
 
-### User
+### User / Profile
 
 ```ts
 interface UserDto {
@@ -109,7 +111,6 @@ interface UserDto {
   faculty_id: string;
   career_id: string;
   admission_year: string;
-  roles: Array<'student' | 'tutor' | 'admin'>;
   created_at: string;
   updated_at: string;
 }
@@ -117,11 +118,18 @@ interface UserDto {
 
 Reglas:
 
-- `email` es el identificador unico del usuario (PK logica).
+- `email` es el identificador unico del usuario (PK logica). Internamente la FK
+  tecnica es `profiles.id = auth.users.id` (uuid).
 - `email` debe pertenecer a dominio institucional UDD.
 - Dominio exacto recomendado: `@udd.cl`.
 - `campus_id`, `faculty_id` y `career_id` deben referenciar un catalogo academico valido.
-- Toda cuenta nace con rol `student`. Puede adquirir tambien rol `tutor`, pero sigue siendo la misma persona/cuenta.
+- Toda cuenta es una persona (`profiles`). No existe un "rol student" persistido:
+  cualquier persona autenticada puede reservar tutorias.
+- Ser tutor es una faceta adicional: existe una fila 1:1 en `teachers` con
+  `profile_id = profiles.id`.
+- El registro puede marcar `wants_to_teach`; en ese caso se crea
+  automaticamente un perfil tutor en estado `incomplete` para completar
+  onboarding despues.
 - Si la universidad usa otros dominios institucionales, deben agregarse explicitamente.
 
 ### Campus
@@ -170,10 +178,10 @@ Reglas:
 ```ts
 interface TeacherProfileDto {
   id: string;
-  user_id: string;
+  profile_id: string;
   name: string;
   career: string;
-  year: string;
+  admission_year: string;
   rating: number;
   review_count: number;
   price_range: string;
@@ -183,7 +191,7 @@ interface TeacherProfileDto {
   contact: ContactDto | null;
   availability: AvailabilityDayDto[];
   reviews: ReviewDto[];
-  status: 'pending' | 'active' | 'inactive' | 'rejected';
+  status: 'incomplete' | 'pending' | 'active' | 'inactive' | 'rejected';
   created_at: string;
   updated_at: string;
 }
@@ -191,9 +199,16 @@ interface TeacherProfileDto {
 
 Reglas:
 
+- Un tutor es un perfil (relacion 1:1). `name`, `career`, `admission_year` y
+  `avatar_url` se obtienen desde `profiles` via `profile_id`.
 - `contact` debe ocultarse antes de una reserva confirmada.
 - `rating` y `review_count` deberian ser calculados por backend.
-- `status` permite moderacion administrativa.
+- `status` permite moderacion administrativa:
+  - `incomplete`: creado desde el registro; pendiente de onboarding.
+  - `pending`: onboarding completado; espera activacion admin.
+  - `active`: visible en el catalogo publico y reservable.
+  - `inactive`: pausado por el tutor.
+  - `rejected`: rechazado por admin.
 
 Decision pendiente:
 

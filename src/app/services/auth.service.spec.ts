@@ -26,10 +26,11 @@ const SIGNUP_DATA: SignUpData = {
   password: 'secret-password',
   fullName: 'Ada Lovelace',
   career: 'Ingeniería Civil',
-  year: '2023',
+  admissionYear: '2023',
   campusId: 'campus-stgo',
   facultyId: 'fac-ingenieria-stgo',
   careerId: 'career-stgo-ingenieria-ing-civil-industrial',
+  wantsToTeach: true,
 };
 
 describe('AuthService', () => {
@@ -74,13 +75,21 @@ describe('AuthService', () => {
         data: {
           full_name: 'Ada Lovelace',
           career: 'Ingeniería Civil',
-          year: '2023',
+          admission_year: '2023',
           campus_id: 'campus-stgo',
           faculty_id: 'fac-ingenieria-stgo',
           career_id: 'career-stgo-ingenieria-ing-civil-industrial',
+          wants_to_teach: 'true',
         },
       },
     });
+  });
+
+  it('envía wants_to_teach=false cuando el usuario no quiere enseñar', async () => {
+    await service.signUp({ ...SIGNUP_DATA, wantsToTeach: false });
+
+    const call = authMock.signUp.mock.calls[0][0];
+    expect(call.options.data.wants_to_teach).toBe('false');
   });
 
   describe('rate limiting (1 intento / 10 s)', () => {

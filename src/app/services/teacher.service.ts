@@ -21,10 +21,11 @@ export interface TeacherFilters {
  * Consulta anidada: tutor + perfil + ramos + disponibilidad + reseñas.
  * El contacto (contact_type/contact_value) NO se incluye: el catálogo público
  * no debe exponerlo (se oculta hasta que el tutor confirme una reserva).
+ * Solo se listan tutores `active`; los `incomplete`/`pending` no son visibles.
  */
 const TEACHER_SELECT = `
-  id, about, price_min, price_max, rating, review_count,
-  profile:profiles ( full_name, career, year, avatar_url ),
+  id, about, price_min, price_max, rating, review_count, status,
+  profile:profiles ( full_name, career, admission_year, avatar_url ),
   teacher_subjects ( subjects ( name ) ),
   availability_slots ( date, hour, available ),
   reviews ( rating, comment, date, author:profiles ( full_name ) )
@@ -50,14 +51,15 @@ export class TeacherService {
   private async fetchTeachers(): Promise<Teacher[]> {
     const { data, error } = await this.supabase
       .from('teachers')
-      .select(TEACHER_SELECT);
+      .select(TEACHER_SELECT)
+      .eq('status', 'active');
 
     if (error) {
       throw error;
     }
 
     if (!data || data.length === 0) {
-      console.warn('[TeacherService] Sin tutores en Supabase — usando mocks.');
+      console.warn('[TeacherService] Sin tutores activos en Supabase — usando mocks.');
       return MOCK_TEACHERS;
     }
 
@@ -85,7 +87,7 @@ export class TeacherService {
       id: String(row.id),
       name: profile.full_name ?? '',
       career: profile.career ?? '',
-      year: profile.year ?? '',
+      year: profile.admission_year ?? '',
       rating: Number(row.rating) || 0,
       reviewCount: row.review_count ?? 0,
       priceRange: formatPriceRange(row.price_min ?? 0, row.price_max ?? 0),

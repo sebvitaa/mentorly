@@ -45,8 +45,10 @@ y agendar una hora desde un calendario de disponibilidad.
 - **Catálogo académico UDD**: al agendar, el estudiante selecciona su campus,
   facultad y carrera a través de selects dependientes, garantizando datos
   normalizados.
-- **Registro e inicio de sesión** con correo institucional UDD. Una misma cuenta
-  puede ser estudiante y, opcionalmente, tutor.
+- **Registro e inicio de sesión** con correo institucional UDD. Toda cuenta es
+  una persona (`profiles`); puede reservar tutorías y, opcionalmente, marcar
+  que también quiere ofrecerlas. Al marcarlo se crea un perfil tutor inicial
+  (`incomplete`) para completar después.
 - **Historial local** de solicitudes y tutores favoritos en `/requests`,
   persistido con `localStorage`.
 - **Uso responsable**: el formulario exige aceptar que la tutoría es para

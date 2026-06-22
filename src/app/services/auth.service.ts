@@ -12,12 +12,14 @@ export interface SignUpData {
   fullName: string;
   /** Nombre legible de la carrera (se guarda junto al IDs de referencia). */
   career: string;
-  /** Año que cursa, ej. "3er año". */
-  year: string;
+  /** Año de ingreso a la carrera, ej. "2023". */
+  admissionYear: string;
   /** IDs del catálogo académico (referencias a campuses/faculties/careers). */
   campusId: string;
   facultyId: string;
   careerId: string;
+  /** Si el usuario quiere ofrecer tutorías. Crea un perfil tutor `incomplete`. */
+  wantsToTeach: boolean;
 }
 
 /**
@@ -64,8 +66,9 @@ export class AuthService {
 
   /**
    * Registro con correo y contraseña.
-   * `fullName`, `career` y `year` viajan en los metadatos; el trigger
-   * `handle_new_user` los usa para crear la fila en `profiles`.
+   * `fullName`, `career`, `admission_year` y `wants_to_teach` viajan en los
+   * metadatos; el trigger `handle_new_user` los usa para crear la fila en
+   * `profiles` y, si corresponde, la fila en `teachers` (status `incomplete`).
    */
   signUp(data: SignUpData) {
     this.enforceRateLimit('signup');
@@ -77,10 +80,11 @@ export class AuthService {
         data: {
           full_name: data.fullName,
           career: data.career,
-          year: data.year,
+          admission_year: data.admissionYear,
           campus_id: data.campusId,
           faculty_id: data.facultyId,
           career_id: data.careerId,
+          wants_to_teach: data.wantsToTeach ? 'true' : 'false',
         },
       },
     });
