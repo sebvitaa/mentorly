@@ -42,6 +42,14 @@ alter table public.teachers
 alter table public.teachers
   add column if not exists updated_at timestamptz not null default now();
 
+-- Permitir perfiles tutor 'incomplete' SIN precio ni contacto todavía.
+-- (El trigger handle_new_user inserta teachers(profile_id, status) sin estos
+--  campos; si fueran NOT NULL sin default, el registro de tutor fallaría.)
+alter table public.teachers alter column price_min     drop not null;
+alter table public.teachers alter column price_max     drop not null;
+alter table public.teachers alter column contact_type  drop not null;
+alter table public.teachers alter column contact_value drop not null;
+
 -- IMPORTANTE: la Fase 3 revocó el SELECT de tabla en `teachers` y lo concedió
 -- columna por columna (sin `status`, que aún no existía). El catálogo necesita
 -- leer/filtrar por `status`, así que concedemos SELECT sobre esa columna.
@@ -94,6 +102,13 @@ end $$;
 drop policy if exists "lectura publica teachers" on public.teachers;
 create policy "ver tutores activos" on public.teachers
   for select using (status = 'active');
+
+-- El propio usuario puede ver SU perfil tutor aunque no esté activo
+-- (necesario para que /profile lea su tutor 'incomplete').
+drop policy if exists "ver mi perfil tutor" on public.teachers;
+create policy "ver mi perfil tutor" on public.teachers
+  for select to authenticated
+  using (profile_id = auth.uid());
 
 -- El propio usuario puede crear su perfil tutor (onboarding futuro).
 drop policy if exists "crear mi perfil tutor" on public.teachers;
