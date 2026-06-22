@@ -15,13 +15,14 @@ import {
   ToastController,
 } from '@ionic/angular/standalone';
 
-import { BookingApiService } from '../../api/booking-api.service';
 import { HeaderComponent } from '../../components/header/header.component';
-import { BookingStatus } from '../../api/dtos/booking.dto';
+import {
+  BookingRequestView,
+  BookingService,
+  BookingStatus,
+} from '../../services/booking.service';
 import { FavoriteTeacher } from '../../models/favorite-teacher.model';
-import { LocalRequest } from '../../models/local-request.model';
 import { FavoritesService } from '../../services/favorites.service';
-import { RequestHistoryService } from '../../services/request-history.service';
 import { formatFullDate } from '../../utils/format.util';
 
 @Component({
@@ -46,36 +47,37 @@ import { formatFullDate } from '../../utils/format.util';
   styleUrl: './requests.page.scss',
 })
 export class RequestsPage implements OnInit {
-  private readonly bookingApi = inject(BookingApiService);
+  private readonly bookingService = inject(BookingService);
   private readonly favoritesService = inject(FavoritesService);
-  private readonly requestHistory = inject(RequestHistoryService);
   private readonly toastController = inject(ToastController);
 
   readonly formatFullDate = formatFullDate;
 
-  requests: LocalRequest[] = [];
+  requests: BookingRequestView[] = [];
   favorites: FavoriteTeacher[] = [];
   cancellingId: string | null = null;
 
   ngOnInit(): void {
-    this.loadLocalData();
+    this.loadRequests();
+    this.favorites = this.favoritesService.getFavorites();
   }
 
-  async cancelRequest(request: LocalRequest): Promise<void> {
+  cancelRequest(request: BookingRequestView): void {
     if (request.status !== 'pending' || this.cancellingId) {
       return;
     }
 
     this.cancellingId = request.id;
-    this.bookingApi.cancelBooking(request.id, 'Cancelada por el estudiante').subscribe({
+    this.bookingService.cancelBooking(request.id).subscribe({
       next: async () => {
-        this.markRequestCancelled(request.id);
+        this.cancellingId = null;
+        this.loadRequests();
         await this.presentToast('Solicitud cancelada.', 'primary');
       },
       error: async () => {
-        this.markRequestCancelled(request.id);
+        this.cancellingId = null;
         await this.presentToast(
-          'La API no tenia esta solicitud activa, pero se cancelo localmente.',
+          'No se pudo cancelar la solicitud. Intenta nuevamente.',
           'warning'
         );
       },
@@ -84,7 +86,7 @@ export class RequestsPage implements OnInit {
 
   removeFavorite(teacherId: string): void {
     this.favoritesService.removeFavorite(teacherId);
-    this.loadLocalData();
+    this.favorites = this.favoritesService.getFavorites();
   }
 
   statusLabel(status: BookingStatus): string {
@@ -93,7 +95,6 @@ export class RequestsPage implements OnInit {
       confirmed: 'Confirmada',
       rejected: 'Rechazada',
       cancelled: 'Cancelada',
-      completed: 'Completada',
     };
     return labels[status];
   }
@@ -104,20 +105,19 @@ export class RequestsPage implements OnInit {
       confirmed: 'success',
       rejected: 'danger',
       cancelled: 'medium',
-      completed: 'primary',
     };
     return colors[status];
   }
 
-  private markRequestCancelled(id: string): void {
-    this.requestHistory.updateStatus(id, 'cancelled');
-    this.cancellingId = null;
-    this.loadLocalData();
-  }
-
-  private loadLocalData(): void {
-    this.requests = this.requestHistory.getRequests();
-    this.favorites = this.favoritesService.getFavorites();
+  private loadRequests(): void {
+    this.bookingService.getMyRequests().subscribe({
+      next: (requests) => {
+        this.requests = requests;
+      },
+      error: () => {
+        this.requests = [];
+      },
+    });
   }
 
   private async presentToast(

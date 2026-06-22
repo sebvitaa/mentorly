@@ -3,11 +3,11 @@
 <ion-content [fullscreen]="true">
   <main class="requests-page">
     <section class="page-hero">
-      <p class="eyebrow">Seguimiento local</p>
+      <p class="eyebrow">Seguimiento</p>
       <h2>Mis solicitudes y favoritos</h2>
       <p>
-        Revisa las tutorías solicitadas y conserva a mano los perfiles que más
-        te interesan. Esta información se guarda en este navegador.
+        Revisa las tutorías que solicitaste y conserva a mano los perfiles que
+        más te interesan.
       </p>
     </section>
 
@@ -45,30 +45,6 @@
                     <ion-label>
                       <strong>Fecha</strong>
                       <p>{{ formatFullDate(request.date) }} a las {{ request.hour }}</p>
-                    </ion-label>
-                  </ion-item>
-                  <ion-item>
-                    <ion-label>
-                      <strong>Estudiante</strong>
-                      <p>
-                        {{ request.studentFirstName }} {{ request.studentLastName }} ·
-                        Ingreso {{ request.admissionYear }}
-                      </p>
-                    </ion-label>
-                  </ion-item>
-                  <ion-item>
-                    <ion-label>
-                      <strong>Carrera</strong>
-                      <p>
-                        {{ request.campusName }} · {{ request.facultyName }} ·
-                        {{ request.careerName }}
-                      </p>
-                    </ion-label>
-                  </ion-item>
-                  <ion-item>
-                    <ion-label>
-                      <strong>Correo</strong>
-                      <p>{{ request.studentEmail }}</p>
                     </ion-label>
                   </ion-item>
                   @if (request.message) {

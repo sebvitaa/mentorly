@@ -4,26 +4,20 @@ import { RouterLink } from '@angular/router';
 import {
   IonButton,
   IonCheckbox,
-  IonInput,
   IonItem,
   IonNote,
-  IonSelect,
-  IonSelectOption,
   IonTextarea,
   ToastController,
 } from '@ionic/angular/standalone';
 
 import { DayAvailability } from '../../models/teacher.model';
-import { BookingApiService } from '../../api/booking-api.service';
-import { RequestHistoryService } from '../../services/request-history.service';
-import { AcademicCatalogApiService } from '../../api/academic-catalog-api.service';
+import { BookingService } from '../../services/booking.service';
 import { AuthService } from '../../services/auth.service';
 import {
   formatFullDate,
   getDayName,
   getDayNumber,
 } from '../../utils/format.util';
-import { CampusDto, CareerDto, FacultyDto } from '../../api/dtos/academic-catalog.dto';
 
 @Component({
   selector: 'app-schedule-calendar',
@@ -33,11 +27,8 @@ import { CampusDto, CareerDto, FacultyDto } from '../../api/dtos/academic-catalo
     RouterLink,
     IonButton,
     IonCheckbox,
-    IonInput,
     IonItem,
     IonNote,
-    IonSelect,
-    IonSelectOption,
     IonTextarea,
   ],
   templateUrl: './schedule-calendar.component.html',
@@ -49,9 +40,7 @@ export class ScheduleCalendarComponent implements OnInit {
   @Input() availability: DayAvailability[] = [];
 
   private readonly toastController = inject(ToastController);
-  private readonly bookingApi = inject(BookingApiService);
-  private readonly requestHistory = inject(RequestHistoryService);
-  private readonly academicCatalog = inject(AcademicCatalogApiService);
+  private readonly bookingService = inject(BookingService);
   private readonly authService = inject(AuthService);
 
   /** ¿Hay sesión iniciada? Controla si se muestra el formulario o el aviso. */
@@ -68,12 +57,8 @@ export class ScheduleCalendarComponent implements OnInit {
   selectedTime: string | null = null;
   isBooking = false;
   formSubmitted = false;
-  bookingForm = this.createEmptyBookingForm();
+  message = '';
   integrityAccepted = false;
-
-  campuses: CampusDto[] = [];
-  faculties: FacultyDto[] = [];
-  careers: CareerDto[] = [];
 
   /** Calendar window: every date from today through two weeks out. */
   allDates: string[] = [];
@@ -90,10 +75,6 @@ export class ScheduleCalendarComponent implements OnInit {
     ) {
       this.allDates.push(new Date(d).toISOString().split('T')[0]);
     }
-
-    this.academicCatalog.getCampuses().subscribe((campuses) => {
-      this.campuses = campuses;
-    });
   }
 
   /** Days that have at least one open time slot. */
@@ -110,10 +91,7 @@ export class ScheduleCalendarComponent implements OnInit {
   toggle(): void {
     this.isOpen = !this.isOpen;
     if (!this.isOpen) {
-      this.selectedDay = null;
-      this.selectedTime = null;
-      this.formSubmitted = false;
-      this.integrityAccepted = false;
+      this.resetSelection();
     }
   }
 
@@ -130,46 +108,20 @@ export class ScheduleCalendarComponent implements OnInit {
     this.formSubmitted = false;
   }
 
-  onCampusChange(): void {
-    const campusId = this.bookingForm.campusId;
-    this.bookingForm.facultyId = '';
-    this.bookingForm.careerId = '';
-    this.faculties = [];
-    this.careers = [];
-
-    if (!campusId) {
-      return;
-    }
-
-    this.academicCatalog.getFaculties(campusId).subscribe((faculties) => {
-      this.faculties = faculties;
-    });
-  }
-
-  onFacultyChange(): void {
-    const campusId = this.bookingForm.campusId;
-    const facultyId = this.bookingForm.facultyId;
-    this.bookingForm.careerId = '';
-    this.careers = [];
-
-    if (!campusId || !facultyId) {
-      return;
-    }
-
-    this.academicCatalog.getCareers({ campusId, facultyId }).subscribe((careers) => {
-      this.careers = careers;
-    });
-  }
-
   async confirm(): Promise<void> {
-    if (!this.teacherId || !this.selectedDay || !this.selectedTime || this.isBooking) {
+    if (
+      !this.teacherId ||
+      !this.selectedDay ||
+      !this.selectedTime ||
+      this.isBooking
+    ) {
       return;
     }
 
     this.formSubmitted = true;
-    if (!this.isFormValid()) {
+    if (!this.integrityAccepted) {
       await this.presentToast(
-        'Completa los datos requeridos, selecciona tu carrera y acepta la regla de uso.',
+        'Debes aceptar la regla de uso responsable para enviar la solicitud.',
         'danger'
       );
       return;
@@ -177,65 +129,29 @@ export class ScheduleCalendarComponent implements OnInit {
 
     const date = this.selectedDay.date;
     const hour = this.selectedTime;
-    const career = this.careers.find((item) => item.id === this.bookingForm.careerId);
-    const faculty = this.faculties.find((item) => item.id === this.bookingForm.facultyId);
-    const campus = this.campuses.find((item) => item.id === this.bookingForm.campusId);
 
     this.isBooking = true;
-    this.bookingApi
+    this.bookingService
       .createBooking({
-        teacher_id: this.teacherId,
+        teacherId: this.teacherId,
         date,
         hour,
-        student_first_name: this.bookingForm.firstName.trim(),
-        student_last_name: this.bookingForm.lastName.trim(),
-        student_admission_year: this.bookingForm.admissionYear.trim(),
-        student_email: this.bookingForm.email.trim(),
-        student_campus_id: this.bookingForm.campusId,
-        student_faculty_id: this.bookingForm.facultyId,
-        student_career_id: this.bookingForm.careerId,
-        message: this.bookingForm.message.trim() || null,
+        message: this.message.trim() || null,
       })
       .subscribe({
-        next: async (booking) => {
-          this.requestHistory.saveRequest({
-            id: booking.id,
-            teacherId: booking.teacher_id,
-            teacherName: this.teacherName,
-            date: booking.date,
-            hour: booking.hour,
-            status: booking.status,
-            studentFirstName: booking.student_first_name,
-            studentLastName: booking.student_last_name,
-            studentEmail: booking.student_email,
-            admissionYear: booking.student_admission_year,
-            campusId: booking.student_campus_id,
-            campusName: campus?.name ?? '',
-            facultyId: booking.student_faculty_id,
-            facultyName: faculty?.name ?? '',
-            careerId: booking.student_career_id,
-            careerName: career?.name ?? '',
-            message: booking.message,
-            createdAt: booking.created_at,
-          });
+        next: async () => {
           this.markSlotAsUnavailable(date, hour);
           await this.presentToast(
-            `Solicitud enviada: ${formatFullDate(date)} a las ${hour}. Queda pendiente de confirmacion del tutor.`,
+            `Solicitud enviada: ${formatFullDate(date)} a las ${hour}. Queda pendiente de confirmación del tutor.`,
             'primary'
           );
           this.isOpen = false;
-          this.selectedDay = null;
-          this.selectedTime = null;
-          this.formSubmitted = false;
-          this.bookingForm = this.createEmptyBookingForm();
-          this.integrityAccepted = false;
-          this.faculties = [];
-          this.careers = [];
+          this.resetSelection();
           this.isBooking = false;
         },
         error: async () => {
           await this.presentToast(
-            'No se pudo confirmar la hora. Intenta con otro bloque.',
+            'No se pudo enviar la solicitud. Intenta nuevamente.',
             'danger'
           );
           this.isBooking = false;
@@ -243,54 +159,8 @@ export class ScheduleCalendarComponent implements OnInit {
       });
   }
 
-  isFieldInvalid(field: keyof BookingRequestForm): boolean {
-    if (!this.formSubmitted) {
-      return false;
-    }
-
-    const value = this.bookingForm[field];
-    if (field === 'message') {
-      return false;
-    }
-
-    if (field === 'email') {
-      return !this.isUddEmail(value.trim());
-    }
-
-    return !value;
-  }
-
-  get hasFormErrors(): boolean {
-    return (
-      this.isFieldInvalid('firstName') ||
-      this.isFieldInvalid('lastName') ||
-      this.isFieldInvalid('campusId') ||
-      this.isFieldInvalid('facultyId') ||
-      this.isFieldInvalid('careerId') ||
-      this.isFieldInvalid('admissionYear') ||
-      this.isFieldInvalid('email')
-    );
-  }
-
   get isIntegrityInvalid(): boolean {
     return this.formSubmitted && !this.integrityAccepted;
-  }
-
-  private isFormValid(): boolean {
-    return (
-      !!this.bookingForm.firstName.trim() &&
-      !!this.bookingForm.lastName.trim() &&
-      !!this.bookingForm.campusId &&
-      !!this.bookingForm.facultyId &&
-      !!this.bookingForm.careerId &&
-      !!this.bookingForm.admissionYear.trim() &&
-      this.isUddEmail(this.bookingForm.email.trim()) &&
-      this.integrityAccepted
-    );
-  }
-
-  private isUddEmail(email: string): boolean {
-    return /^[^\s@]+@udd\.cl$/i.test(email);
   }
 
   private markSlotAsUnavailable(date: string, hour: string): void {
@@ -302,17 +172,12 @@ export class ScheduleCalendarComponent implements OnInit {
     }
   }
 
-  private createEmptyBookingForm(): BookingRequestForm {
-    return {
-      firstName: '',
-      lastName: '',
-      campusId: '',
-      facultyId: '',
-      careerId: '',
-      admissionYear: '',
-      email: '',
-      message: '',
-    };
+  private resetSelection(): void {
+    this.selectedDay = null;
+    this.selectedTime = null;
+    this.formSubmitted = false;
+    this.message = '';
+    this.integrityAccepted = false;
   }
 
   private async presentToast(
@@ -327,15 +192,4 @@ export class ScheduleCalendarComponent implements OnInit {
     });
     await toast.present();
   }
-}
-
-interface BookingRequestForm {
-  firstName: string;
-  lastName: string;
-  campusId: string;
-  facultyId: string;
-  careerId: string;
-  admissionYear: string;
-  email: string;
-  message: string;
 }
