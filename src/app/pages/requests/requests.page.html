@@ -14,10 +14,10 @@
     <section class="section-block">
       <div class="section-heading">
         <h3>Mis solicitudes</h3>
-        <ion-chip color="primary">{{ requests.length }} registradas</ion-chip>
+        <ion-chip color="primary">{{ visibleRequests.length }} registradas</ion-chip>
       </div>
 
-      @if (requests.length === 0) {
+      @if (visibleRequests.length === 0) {
         <ion-card class="empty-card">
           <ion-card-content>
             <ion-text color="medium">
@@ -28,7 +28,7 @@
         </ion-card>
       } @else {
         <ion-list class="request-list">
-          @for (request of requests; track request.id) {
+          @for (request of visibleRequests; track request.id) {
             <ion-card class="request-card">
               <ion-card-header>
                 <div class="card-title-row">
@@ -55,9 +55,29 @@
                       </ion-label>
                     </ion-item>
                   }
+                  @if (request.status === 'confirmed') {
+                    <ion-item>
+                      <ion-label>
+                        <strong>Contacto del tutor</strong>
+                        @if (contacts[request.teacherId]; as contact) {
+                          @if (contact.email) {
+                            <p>{{ contact.email }}</p>
+                          }
+                          @if (contact.phone) {
+                            <p>{{ contact.phone }}</p>
+                          }
+                          @if (!contact.email && !contact.phone) {
+                            <p>El tutor no compartió un contacto.</p>
+                          }
+                        } @else {
+                          <p>Cargando contacto…</p>
+                        }
+                      </ion-label>
+                    </ion-item>
+                  }
                 </ion-list>
 
-                @if (request.status === 'pending') {
+                @if (request.status === 'pending' || request.status === 'confirmed') {
                   <ion-button
                     color="danger"
                     fill="outline"
@@ -65,7 +85,13 @@
                     [disabled]="cancellingId === request.id"
                     (click)="cancelRequest(request)"
                   >
-                    {{ cancellingId === request.id ? 'Cancelando...' : 'Cancelar solicitud' }}
+                    @if (cancellingId === request.id) {
+                      Cancelando...
+                    } @else if (request.status === 'confirmed') {
+                      Cancelar tutoría
+                    } @else {
+                      Cancelar solicitud
+                    }
                   </ion-button>
                 }
               </ion-card-content>
@@ -118,5 +144,103 @@
         </div>
       }
     </section>
+
+    @if (isTutor) {
+      <section class="section-block">
+        <div class="section-heading">
+          <h3>Solicitudes para ti</h3>
+          <ion-chip color="primary">{{ incoming.length }} recibidas</ion-chip>
+        </div>
+
+        <!-- Aceptadas (arriba) -->
+        <div class="subsection-heading">
+          <h4>Aceptadas</h4>
+        </div>
+        @if (acceptedIncoming.length === 0) {
+          <ion-card class="empty-card">
+            <ion-card-content>
+              <ion-text color="medium">
+                Aún no has aceptado solicitudes.
+              </ion-text>
+            </ion-card-content>
+          </ion-card>
+        } @else {
+          <div class="incoming-grid">
+            @for (request of acceptedIncoming; track request.id) {
+              <ion-card class="accepted-card">
+                <ion-card-content>
+                  <p class="accepted-line">
+                    {{ request.studentName }} - {{ formatShortDate(request.date) }} - {{ request.hour }}
+                  </p>
+                  <ion-button
+                    color="danger"
+                    fill="outline"
+                    size="small"
+                    expand="block"
+                    [disabled]="processingId === request.id"
+                    (click)="cancelAccepted(request)"
+                  >
+                    {{ processingId === request.id ? 'Cancelando...' : 'Cancelar' }}
+                  </ion-button>
+                </ion-card-content>
+              </ion-card>
+            }
+          </div>
+        }
+
+        <!-- Por aceptar (abajo) -->
+        <div class="subsection-heading">
+          <h4>Por aceptar</h4>
+        </div>
+        @if (pendingIncoming.length === 0) {
+          <ion-card class="empty-card">
+            <ion-card-content>
+              <ion-text color="medium">
+                No tienes solicitudes pendientes por responder.
+              </ion-text>
+            </ion-card-content>
+          </ion-card>
+        } @else {
+          <div class="incoming-grid">
+            @for (request of pendingIncoming; track request.id) {
+              <ion-card class="incoming-card">
+                <ion-card-content>
+                  <p class="incoming-name">{{ request.studentName }}</p>
+                  <p class="incoming-slot">
+                    {{ request.hour }} - {{ formatShortDate(request.date) }}
+                  </p>
+                  @if (request.message) {
+                    <p class="incoming-message">{{ request.message }}</p>
+                  }
+                  <p class="incoming-sent">
+                    Enviada: {{ formatDateTime(request.createdAt) }}
+                  </p>
+
+                  <div class="incoming-actions">
+                    <ion-button
+                      color="success"
+                      size="small"
+                      [disabled]="processingId === request.id"
+                      (click)="acceptRequest(request)"
+                    >
+                      Aceptar
+                    </ion-button>
+                    <ion-button
+                      color="danger"
+                      fill="outline"
+                      size="small"
+                      [disabled]="processingId === request.id"
+                      (click)="rejectRequest(request)"
+                    >
+                      Rechazar
+                    </ion-button>
+                  </div>
+                </ion-card-content>
+              </ion-card>
+            }
+          </div>
+        }
+      </section>
+    }
   </main>
 </ion-content>

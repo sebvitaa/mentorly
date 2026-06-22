@@ -133,6 +133,8 @@ Supabase** (no hay migraciones automáticas):
 | `fase-3-hardening.sql` | Fuerza dominio `@udd.cl` (trigger), oculta el contacto del tutor (grants), reafirma RLS. |
 | `fase-4-person-tutor-architecture.sql` | Arquitectura persona/tutor: `teachers.status`, `admission_year`, trigger extendido. |
 | `fase-5-tutor-publishing.sql` | Publicación del tutor: columna `teachers.weekly_availability` + RPCs `get_my_tutor_profile` / `save_tutor_profile` / `expand_tutor_availability`. |
+| `fase-6-contactos-ramos-perfil.sql` | Contacto dual (email + teléfono) + `show_contact`, edición de perfil, RPC `get_teacher_contact` (expone contacto si es público o hay reserva confirmada). |
+| `fase-7-tutor-requests.sql` | RLS para el lado del tutor: ver y responder (aceptar/rechazar/cancelar) las solicitudes recibidas. |
 | `seed-demo-tutor.sql` | Tutor de demostración para probar el flujo de reserva. |
 
 El detalle de tablas, columnas, RLS y funciones está en
@@ -252,7 +254,7 @@ npm run test:all  # ambos
   (`Email signups are disabled`). Para que `/register` cree cuentas, actívalo en
   Dashboard → Authentication → Providers → Email. Mientras tanto, usa una cuenta
   existente o el tutor demo.
-- Las migraciones se aplican **a mano** en el SQL Editor (orden fase-1 → fase-5).
+- Las migraciones se aplican **a mano** en el SQL Editor (orden fase-1 → fase-7).
   Si una RPC devuelve `404 / PGRST202`, falta aplicar el `.sql` correspondiente.
 - La **ventana rodante** de disponibilidad se refresca al guardar el perfil; para
   que avance sola cada día se puede activar el job `pg_cron` documentado en

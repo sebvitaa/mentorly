@@ -1,7 +1,7 @@
 # Mentorly UDD — Esquema de base de datos (Supabase)
 
 Referencia del esquema **actual y deployado**. Se mantiene sincronizado con los scripts en `docs/sql/`.  
-Las migraciones se aplican **en orden**: fase-1 → fase-2 → fase-3 → fase-4 → fase-5.
+Las migraciones se aplican **en orden**: fase-1 → fase-2 → fase-3 → fase-4 → fase-5 → fase-6 → fase-7.
 
 ---
 
@@ -263,9 +263,13 @@ Writes de `reviews`:
 
 | Operación | Quién | Condición |
 |---|---|---|
-| SELECT | autenticado | `auth.uid() = student_id` |
-| INSERT | autenticado | `auth.uid() = student_id` |
-| UPDATE (cancelar) | autenticado | `auth.uid() = student_id` |
+| SELECT | estudiante | `auth.uid() = student_id` |
+| INSERT | estudiante | `auth.uid() = student_id` |
+| UPDATE (cancelar) | estudiante | `auth.uid() = student_id` |
+| SELECT | tutor (fase-7) | la reserva apunta a su ficha: `exists (teachers t where t.id = teacher_id and t.profile_id = auth.uid())` |
+| UPDATE (aceptar/rechazar/cancelar, fase-7) | tutor | misma condición que su SELECT |
+
+> Las políticas son permisivas (se combinan con OR). Un usuario que es estudiante **y** tutor ve por RLS tanto las reservas que envió como las que recibió; el frontend las separa filtrando explícitamente por `student_id` (Mis solicitudes) o por la ficha del tutor (Solicitudes para ti).
 
 ---
 

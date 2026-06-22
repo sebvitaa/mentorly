@@ -63,11 +63,71 @@
 
 .request-card,
 .favorite-card,
-.empty-card {
+.empty-card,
+.incoming-card,
+.accepted-card {
   border: 2px solid var(--brand-ink);
   border-radius: 12px;
   box-shadow: none;
   margin: 0;
+}
+
+.subsection-heading {
+  margin: 20px 0 12px;
+
+  h4 {
+    font-family: var(--app-font);
+    font-weight: 800;
+    font-size: 17px;
+    color: var(--brand-ink);
+    margin: 0;
+  }
+}
+
+.incoming-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.incoming-name {
+  font-family: var(--app-font);
+  font-weight: 800;
+  font-size: 16px;
+  color: var(--brand-ink);
+  margin: 0 0 6px;
+}
+
+.incoming-slot {
+  font-family: var(--app-font);
+  font-weight: 700;
+  color: var(--brand-ink);
+  margin: 0 0 8px;
+}
+
+.incoming-message {
+  font-family: var(--app-font);
+  color: var(--brand-muted);
+  margin: 0 0 8px;
+}
+
+.incoming-sent {
+  font-family: var(--app-font);
+  font-size: 12px;
+  color: var(--brand-muted);
+  margin: 0 0 12px;
+}
+
+.incoming-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.accepted-line {
+  font-family: var(--app-font);
+  font-weight: 700;
+  color: var(--brand-ink);
+  margin: 0 0 12px;
 }
 
 .card-title-row {
@@ -124,7 +184,8 @@ ion-item {
     flex-direction: column;
   }
 
-  .favorites-grid {
+  .favorites-grid,
+  .incoming-grid {
     grid-template-columns: 1fr;
   }
 }

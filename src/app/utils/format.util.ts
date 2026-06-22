@@ -31,6 +31,41 @@ export function formatFullDate(dateString: string): string {
   });
 }
 
+const pad2 = (value: number): string => String(value).padStart(2, '0');
+
+/**
+ * Convierte un string a `Date` en hora local. Para fechas "solo día"
+ * (`YYYY-MM-DD`) evita el desfase de un día que produce `new Date()` al
+ * interpretarlas como UTC (relevante en husos negativos como Chile).
+ */
+function toLocalDate(dateString: string): Date {
+  const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateString);
+  if (dateOnly) {
+    return new Date(
+      Number(dateOnly[1]),
+      Number(dateOnly[2]) - 1,
+      Number(dateOnly[3])
+    );
+  }
+  return new Date(dateString);
+}
+
+/** Fecha corta numérica, ej. "2026-06-24" → "24/06/26". */
+export function formatShortDate(dateString: string): string {
+  const date = toLocalDate(dateString);
+  return `${pad2(date.getDate())}/${pad2(date.getMonth() + 1)}/${pad2(
+    date.getFullYear() % 100
+  )}`;
+}
+
+/** Fecha + hora de un timestamp, ej. "24/06/26 15:30" (para "enviada el"). */
+export function formatDateTime(dateString: string): string {
+  const date = toLocalDate(dateString);
+  return `${formatShortDate(dateString)} ${pad2(date.getHours())}:${pad2(
+    date.getMinutes()
+  )}`;
+}
+
 /** Short weekday label ("Lun", "Mar", …). */
 export function getDayName(dateString: string): string {
   return ES_DAYS[new Date(dateString).getDay()];

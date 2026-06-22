@@ -22,7 +22,19 @@ export interface CreatedBooking {
 /** Vista de una reserva del estudiante para "Mis solicitudes". */
 export interface BookingRequestView {
   id: string;
+  teacherId: string;
   teacherName: string;
+  date: string;
+  hour: string;
+  status: BookingStatus;
+  message: string | null;
+  createdAt: string;
+}
+
+/** Vista de una solicitud recibida por el tutor ("Solicitudes para ti"). */
+export interface IncomingRequestView {
+  id: string;
+  studentName: string;
   date: string;
   hour: string;
   status: BookingStatus;
@@ -44,12 +56,27 @@ export class BookingService {
     return from(this.insertBooking(input));
   }
 
-  /** Reservas del estudiante autenticado (RLS limita a las propias). */
+  /** Reservas que el estudiante autenticado envió ("Mis solicitudes"). */
   getMyRequests(): Observable<BookingRequestView[]> {
     return from(this.fetchMyRequests());
   }
 
-  /** Cancela una reserva propia. */
+  /** Solicitudes dirigidas al tutor autenticado ("Solicitudes para ti"). */
+  getIncomingRequests(): Observable<IncomingRequestView[]> {
+    return from(this.fetchIncomingRequests());
+  }
+
+  /** El tutor acepta una solicitud → `confirmed`. */
+  acceptBooking(id: string): Observable<void> {
+    return from(this.updateStatus(id, 'confirmed'));
+  }
+
+  /** El tutor rechaza una solicitud → `rejected`. */
+  rejectBooking(id: string): Observable<void> {
+    return from(this.updateStatus(id, 'rejected'));
+  }
+
+  /** Cancela una reserva (estudiante o tutor) → `cancelled`. */
   cancelBooking(id: string): Observable<void> {
     return from(this.updateStatus(id, 'cancelled'));
   }
@@ -75,11 +102,16 @@ export class BookingService {
   }
 
   private async fetchMyRequests(): Promise<BookingRequestView[]> {
+    // Filtramos explícitamente por `student_id`: el tutor que además es
+    // estudiante tiene RLS que también le deja ver las reservas recibidas
+    // (fase-7), y esas no deben aparecer en "Mis solicitudes".
+    const uid = await this.requireUid();
     const { data, error } = await this.supabase
       .from('bookings')
       .select(
-        'id, date, hour, status, message, created_at, teacher:teachers ( profile:profiles ( full_name ) )'
+        'id, teacher_id, date, hour, status, message, created_at, teacher:teachers ( profile:profiles ( full_name ) )'
       )
+      .eq('student_id', uid)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -88,6 +120,7 @@ export class BookingService {
 
     return (data ?? []).map((row: any) => ({
       id: row.id,
+      teacherId: row.teacher_id,
       teacherName: row.teacher?.profile?.full_name ?? 'Tutor',
       date: row.date,
       hour: row.hour,
@@ -95,6 +128,42 @@ export class BookingService {
       message: row.message ?? null,
       createdAt: row.created_at,
     }));
+  }
+
+  private async fetchIncomingRequests(): Promise<IncomingRequestView[]> {
+    const uid = await this.requireUid();
+    // `!inner` + filtro sobre la ficha del tutor: solo las reservas cuyo
+    // `teacher_id` pertenece a la ficha del usuario autenticado.
+    const { data, error } = await this.supabase
+      .from('bookings')
+      .select(
+        'id, date, hour, status, message, created_at, student:profiles ( full_name ), teacher:teachers!inner ( profile_id )'
+      )
+      .eq('teacher.profile_id', uid)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      throw error;
+    }
+
+    return (data ?? []).map((row: any) => ({
+      id: row.id,
+      studentName: row.student?.full_name ?? 'Estudiante',
+      date: row.date,
+      hour: row.hour,
+      status: row.status as BookingStatus,
+      message: row.message ?? null,
+      createdAt: row.created_at,
+    }));
+  }
+
+  private async requireUid(): Promise<string> {
+    const { data } = await this.supabase.auth.getUser();
+    const uid = data.user?.id;
+    if (!uid) {
+      throw new Error('No autenticado');
+    }
+    return uid;
   }
 
   private async updateStatus(id: string, status: BookingStatus): Promise<void> {

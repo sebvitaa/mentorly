@@ -10,9 +10,10 @@ import {
 /**
  * Integración REAL: reservas (bookings) y su RLS.
  *
- * Sin sesión (anónimo) las policies deben:
- *   - permitir SELECT pero sin filas (la policy es `to authenticated`),
- *   - bloquear el INSERT (no se puede crear reserva sin estar logueado).
+ * Sin sesión (anónimo):
+ *   - `getMyRequests` / `getIncomingRequests` necesitan `auth.uid()`, así que
+ *     fallan limpiamente ("No autenticado") sin pegarle a la red.
+ *   - el INSERT es bloqueado por RLS (no se puede crear reserva sin login).
  *
  * No se crean reservas reales: validar la barrera RLS es el objetivo.
  */
@@ -26,11 +27,12 @@ describe('BookingService (integración Supabase real)', () => {
     await ensureSignedOut(injector);
   });
 
-  it('getMyRequests() sin sesión devuelve un arreglo vacío (RLS)', async () => {
-    const requests = await toPromise(bookings.getMyRequests());
+  it('getMyRequests() sin sesión es rechazado (requiere auth.uid())', async () => {
+    await expect(toPromise(bookings.getMyRequests())).rejects.toBeDefined();
+  });
 
-    expect(Array.isArray(requests)).toBe(true);
-    expect(requests.length).toBe(0);
+  it('getIncomingRequests() sin sesión es rechazado (requiere auth.uid())', async () => {
+    await expect(toPromise(bookings.getIncomingRequests())).rejects.toBeDefined();
   });
 
   it('createBooking() sin sesión es rechazado por RLS', async () => {

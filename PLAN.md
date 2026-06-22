@@ -1,45 +1,72 @@
-# Fix — "No se pudo guardar tu perfil tutor"
+# Plan — Solicitudes para ti (lado tutor)
 
-## Symptom
-Publishing a tutor profile (Profile → "Guardar y publicar") failed with the toast
-**"No se pudo guardar tu perfil tutor"**.
+## Estado
+El código está completo. Solo falta aplicar la migración SQL.
 
-## Root cause
-The save calls the Supabase RPC `save_tutor_profile`, which returned **404 /
-`PGRST202`**:
+---
 
+## Qué se implementó
+
+La página de solicitudes (`src/app/pages/requests/`) ahora tiene una tercera
+sección **"Solicitudes para ti"**, visible únicamente si el usuario es tutor
+(detectado con `TutorProfileService.getMyTutorProfile() !== null`):
+
+- **Aceptadas** (arriba): tarjetas `Nombre Apellido - dd/mm/yy - HH:MM` con botón
+  Cancelar.
+- **Por aceptar** (abajo): grid 3×N de tarjetas con nombre, `HH:MM - dd/mm/yy`,
+  mensaje, `Enviada: dd/mm/yy HH:MM`, y botones Aceptar / Rechazar.
+
+Del lado del estudiante, "Mis solicitudes" ahora:
+- Oculta las solicitudes rechazadas (solo muestra `pending` y `confirmed`).
+- Muestra el contacto del tutor cuando la reserva está confirmada (vía RPC
+  `get_teacher_contact` existente).
+- Permite cancelar tanto pendientes como confirmadas.
+
+`BookingService` tiene los métodos nuevos `getIncomingRequests`, `acceptBooking`,
+`rejectBooking`. Ambas listas filtran explícitamente por `student_id` /
+`teacher.profile_id` para que un usuario que es estudiante y tutor a la vez no
+vea las dos sets mezcladas.
+
+Todas las pruebas pasan (48 unitarias, 3 integración en bookings). Build limpio.
+
+---
+
+## Acción pendiente (tutor)
+
+### Aplicar `docs/sql/fase-7-tutor-requests.sql` en Supabase
+
+Sin esta migración el tutor recibe "Solicitudes para ti" vacío y Aceptar/Rechazar
+falla por RLS.
+
+El archivo agrega dos políticas permisivas a la tabla `bookings`:
+
+```sql
+-- El tutor ve las solicitudes dirigidas a su ficha.
+create policy "tutor ve solicitudes recibidas" on public.bookings
+  for select to authenticated
+  using (
+    exists (
+      select 1 from public.teachers t
+       where t.id = bookings.teacher_id
+         and t.profile_id = auth.uid()
+    )
+  );
+
+-- El tutor responde la solicitud (confirmar / rechazar / cancelar).
+create policy "tutor responde solicitudes" on public.bookings
+  for update to authenticated
+  using ( ... misma condición ... )
+  with check ( ... misma condición ... );
 ```
-Could not find the function public.save_tutor_profile(...) in the schema cache
-```
 
-The `docs/sql/fase-5-tutor-publishing.sql` migration (which creates
-`save_tutor_profile`, `get_my_tutor_profile`, `expand_tutor_availability`, and the
-`teachers.weekly_availability` column) **had not been applied** to the Supabase
-project. The app code was correct; the editor just **swallowed the real error**
-and showed a generic message, which hid the 404.
+El archivo completo está en `docs/sql/fase-7-tutor-requests.sql`. Es idempotente
+(`drop policy if exists` antes de cada `create policy`).
 
-## Fix
-1. **Apply the migration** `docs/sql/fase-5-tutor-publishing.sql` in the Supabase
-   SQL Editor (idempotent: `create or replace`, `add column if not exists`). The
-   RPCs then exist and the call no longer 404s.
-   - If a save 404s right after applying, reload PostgREST's cache:
-     `notify pgrst, 'reload schema';` (Supabase usually reloads on its own).
-2. **Surfaced the real error** so this can't hide again:
-   `src/app/components/tutor-editor/tutor-editor.component.ts` now
-   `console.error(...)`s the underlying error on both the load and save paths,
-   and appends the error message to the failure toast.
+### Verificación manual tras aplicar
 
-## Verification
-- API probe changes from `404 PGRST202` to an auth-level rejection:
-  ```bash
-  curl -s -w "\n%{http_code}\n" -X POST \
-    "https://jrhzzawcjvsxxfnikkkv.supabase.co/rest/v1/rpc/save_tutor_profile" \
-    -H "apikey: sb_publishable_W_MjmjbcNSDpsQqV3HILPQ_D3GlSMYC" \
-    -H "Authorization: Bearer sb_publishable_W_MjmjbcNSDpsQqV3HILPQ_D3GlSMYC" \
-    -H "Content-Type: application/json" -d '{}'
-  ```
-- Manual: log in → Profile → fill price/subjects/contact/availability →
-  "Guardar y publicar" → toast "publicado", badge → "Tutor activo", tutor appears
-  on Home and in subject search.
-- `npm test` (unit) and `npm run test:int` (real APIs) stay green; `ng build`
-  clean.
+1. Iniciar sesión como tutor (el tutor demo o cualquier cuenta con `teachers` row).
+2. Ir a Solicitudes → debe aparecer la sección "Solicitudes para ti".
+3. Desde otra cuenta (estudiante), enviar una solicitud al tutor.
+4. El tutor ve la tarjeta en "Por aceptar"; al aceptar pasa a "Aceptadas".
+5. El estudiante ve la solicitud como "Aceptada" y ve el contacto del tutor.
+6. Al rechazar, desaparece de la vista del estudiante.
