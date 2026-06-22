@@ -52,13 +52,19 @@ begin
   where s.name in ('Cálculo I', 'Programación', 'Álgebra Lineal')
   on conflict do nothing;
 
-  -- Disponibilidad: próximas 2 semanas, lunes a viernes, 6 bloques por día.
-  insert into public.availability_slots (teacher_id, date, hour, available)
-  select v_teacher, d::date, t.h, true
-  from generate_series(current_date, current_date + 13, interval '1 day') d
-  cross join (values ('09:00'),('10:00'),('11:00'),('14:00'),('15:00'),('16:00')) as t(h)
-  where extract(isodow from d) < 6   -- 1..5 = lunes a viernes
-  on conflict (teacher_id, date, hour) do nothing;
+  -- Disponibilidad SEMANAL (Fase 5): se guarda el patrón en teachers y se
+  -- expande a availability_slots con expand_tutor_availability. Lunes a viernes,
+  -- 6 bloques por día.
+  update public.teachers
+     set weekly_availability = (
+       select jsonb_agg(jsonb_build_object('weekday', wd, 'hour', h))
+       from (values (1),(2),(3),(4),(5)) as d(wd)            -- lunes..viernes
+       cross join (values ('09:00'),('10:00'),('11:00'),
+                          ('14:00'),('15:00'),('16:00')) as t(h)
+     )
+   where id = v_teacher;
+
+  perform public.expand_tutor_availability(v_teacher);
 
   raise notice 'Tutor demo listo: profile=%  teacher=%', v_profile, v_teacher;
 end $$;

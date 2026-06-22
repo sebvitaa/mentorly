@@ -63,7 +63,11 @@ export class TeacherService {
       return MOCK_TEACHERS;
     }
 
-    return data.map((row) => this.mapTeacher(row));
+    // Un tutor sin ramos no se muestra en el catálogo (TODO: "no subjects →
+    // not shown"). El RPC de publicación ya lo evita; esto es defensa extra.
+    return data
+      .map((row) => this.mapTeacher(row))
+      .filter((teacher) => teacher.subjects.length > 0);
   }
 
   /** Todos los tutores. */

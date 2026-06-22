@@ -100,32 +100,27 @@
             </div>
           </ion-card-header>
           <ion-card-content>
-            @if (profile.teacherStatus === 'none') {
-              <ion-text color="medium">
-                No estás ofreciendo tutorías. Puedes activar esta opción desde el
-                registro o más adelante.
-              </ion-text>
-            } @else if (profile.teacherStatus === 'incomplete') {
-              <ion-text color="medium">
-                Marcaste que quieres ofrecer tutorías. Próximamente podrás
-                completar tu perfil tutor (bio, ramos, precio y disponibilidad).
-              </ion-text>
-            } @else if (profile.teacherStatus === 'active') {
-              <ion-text color="medium">
-                Tu perfil tutor está activo y visible en el catálogo público.
-              </ion-text>
-            } @else if (profile.teacherStatus === 'pending') {
-              <ion-text color="medium">
-                Completaste tu perfil tutor y está en revisión.
-              </ion-text>
-            } @else if (profile.teacherStatus === 'inactive') {
-              <ion-text color="medium">
-                Tu perfil tutor está pausado. No apareces en el catálogo público.
-              </ion-text>
-            } @else if (profile.teacherStatus === 'rejected') {
+            @if (profile.teacherStatus === 'rejected') {
               <ion-text color="medium">
                 Tu perfil tutor fue rechazado. Contacta al equipo de Mentorly.
               </ion-text>
+            } @else {
+              @if (profile.teacherStatus === 'active') {
+                <ion-text color="medium">
+                  Tu perfil tutor está publicado y visible en el catálogo. Puedes
+                  ajustarlo cuando quieras.
+                </ion-text>
+              } @else {
+                <ion-text color="medium">
+                  Completa precio, ramos, contacto y disponibilidad para
+                  publicarte y aparecer en el catálogo.
+                </ion-text>
+              }
+
+              <app-tutor-editor
+                [accountEmail]="profile.email"
+                (saved)="onTutorSaved($event)"
+              />
             }
           </ion-card-content>
         </ion-card>

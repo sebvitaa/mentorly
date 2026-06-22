@@ -16,6 +16,7 @@ import {
 } from '@ionic/angular/standalone';
 
 import { HeaderComponent } from '../../components/header/header.component';
+import { TutorEditorComponent } from '../../components/tutor-editor/tutor-editor.component';
 import { ProfileService } from '../../services/profile.service';
 import { AuthService } from '../../services/auth.service';
 import { ProfileView, TeacherStatus } from '../../models/profile.model';
@@ -25,6 +26,7 @@ import { ProfileView, TeacherStatus } from '../../models/profile.model';
   standalone: true,
   imports: [
     HeaderComponent,
+    TutorEditorComponent,
     IonBadge,
     IonButton,
     IonCard,
@@ -56,6 +58,13 @@ export class ProfilePage implements OnInit {
   async logout(): Promise<void> {
     await this.authService.signOut();
     await this.router.navigate(['/home']);
+  }
+
+  /** Tras guardar el perfil tutor, refleja el nuevo estado en la tarjeta. */
+  onTutorSaved(status: TeacherStatus): void {
+    if (this.profile) {
+      this.profile = { ...this.profile, teacherStatus: status };
+    }
   }
 
   teacherStatusLabel(status: TeacherStatus): string {

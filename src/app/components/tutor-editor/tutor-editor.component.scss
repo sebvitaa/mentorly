@@ -1,0 +1,86 @@
+.editor-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 0;
+}
+
+.tutor-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.field-group {
+  h4 {
+    margin: 0 0 0.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  ion-item {
+    --padding-start: 0;
+    --inner-padding-end: 0;
+  }
+
+  .hint {
+    display: block;
+    margin: 0.25rem 0 0.5rem;
+    font-size: 0.8rem;
+  }
+}
+
+.price-row,
+.contact-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.availability-scroll {
+  overflow-x: auto;
+  margin-top: 0.5rem;
+}
+
+.availability-grid {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 360px;
+
+  th,
+  td {
+    text-align: center;
+    padding: 0.15rem;
+  }
+
+  thead th {
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding-bottom: 0.35rem;
+  }
+
+  .hour-col {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--ion-color-medium);
+    white-space: nowrap;
+    padding-right: 0.5rem;
+    text-align: right;
+  }
+}
+
+.slot-cell {
+  width: 100%;
+  min-width: 32px;
+  height: 28px;
+  border: 1px solid var(--ion-color-step-200, #ccc);
+  border-radius: 6px;
+  background: var(--ion-color-step-50, #f7f7f7);
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+
+  &.on {
+    background: var(--ion-color-primary);
+    border-color: var(--ion-color-primary);
+  }
+}

@@ -1,0 +1,141 @@
+@if (isLoading) {
+  <div class="editor-loading">
+    <ion-spinner name="crescent"></ion-spinner>
+    <ion-note>Cargando tu perfil tutor…</ion-note>
+  </div>
+} @else {
+  <div class="tutor-editor">
+    <!-- Precio -->
+    <div class="field-group">
+      <h4>Precio por hora (CLP)</h4>
+      <div class="price-row">
+        <ion-item>
+          <ion-input
+            type="number"
+            label="Mínimo"
+            labelPlacement="stacked"
+            placeholder="8000"
+            [(ngModel)]="priceMin"
+          ></ion-input>
+        </ion-item>
+        <ion-item>
+          <ion-input
+            type="number"
+            label="Máximo"
+            labelPlacement="stacked"
+            placeholder="12000"
+            [(ngModel)]="priceMax"
+          ></ion-input>
+        </ion-item>
+      </div>
+    </div>
+
+    <!-- Ramos -->
+    <div class="field-group">
+      <h4>Ramos que enseñas</h4>
+      <ion-item>
+        <ion-select
+          label="Ramos"
+          labelPlacement="stacked"
+          [multiple]="true"
+          placeholder="Selecciona uno o más ramos"
+          [(ngModel)]="selectedSubjectIds"
+        >
+          @for (subject of subjects; track subject.id) {
+            <ion-select-option [value]="subject.id">
+              {{ subject.name }}
+            </ion-select-option>
+          }
+        </ion-select>
+      </ion-item>
+      <ion-note class="hint">Sin ramos no aparecerás en el catálogo.</ion-note>
+    </div>
+
+    <!-- Contacto -->
+    <div class="field-group">
+      <h4>Contacto preferido</h4>
+      <ion-note class="hint">
+        Se comparte con el estudiante solo cuando confirmas una reserva.
+      </ion-note>
+      <div class="contact-row">
+        <ion-item>
+          <ion-select
+            label="Tipo"
+            labelPlacement="stacked"
+            [(ngModel)]="contactType"
+            (ionChange)="onContactTypeChange()"
+          >
+            <ion-select-option value="email">Correo</ion-select-option>
+            <ion-select-option value="phone">Teléfono</ion-select-option>
+          </ion-select>
+        </ion-item>
+        <ion-item>
+          <ion-input
+            label="Valor"
+            labelPlacement="stacked"
+            [placeholder]="contactType === 'email' ? 'tucorreo@udd.cl' : '+56 9 1234 5678'"
+            [(ngModel)]="contactValue"
+          ></ion-input>
+        </ion-item>
+      </div>
+    </div>
+
+    <!-- Descripción -->
+    <div class="field-group">
+      <h4>Sobre ti (opcional)</h4>
+      <ion-item>
+        <ion-textarea
+          labelPlacement="stacked"
+          [autoGrow]="true"
+          placeholder="Cuenta cómo ayudas, tu experiencia, etc."
+          [(ngModel)]="about"
+        ></ion-textarea>
+      </ion-item>
+    </div>
+
+    <!-- Disponibilidad semanal -->
+    <div class="field-group">
+      <h4>Disponibilidad semanal</h4>
+      <ion-note class="hint">
+        Marca tus horas libres. Se repiten cada semana y se ofrecen para las
+        próximas dos semanas.
+      </ion-note>
+
+      <div class="availability-scroll">
+        <table class="availability-grid">
+          <thead>
+            <tr>
+              <th class="hour-col"></th>
+              @for (day of weekdays; track day.value) {
+                <th>{{ day.label }}</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (hour of hours; track hour) {
+              <tr>
+                <th class="hour-col">{{ hour }}</th>
+                @for (day of weekdays; track day.value) {
+                  <td>
+                    <button
+                      type="button"
+                      class="slot-cell"
+                      [class.on]="isCellOn(day.value, hour)"
+                      (click)="toggleCell(day.value, hour)"
+                      [attr.aria-pressed]="isCellOn(day.value, hour)"
+                      [attr.aria-label]="day.label + ' ' + hour"
+                    ></button>
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <ion-button expand="block" [disabled]="isSaving" (click)="save()">
+      {{ isSaving ? 'Guardando…' : 'Guardar y publicar' }}
+    </ion-button>
+  </div>
+}

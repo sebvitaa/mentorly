@@ -1,356 +1,364 @@
-# Mentorly — Esquema de base de datos (Supabase)
+# Mentorly UDD — Esquema de base de datos (Supabase)
 
-Documento de referencia para crear/actualizar la base de datos en Supabase antes de conectar la app.
-Derivado del modelo de dominio actual (`src/app/models/teacher.model.ts`), los datos mock
-(`src/app/data/mock-teachers.ts`) y la decisión de que **`profiles` es la entidad central**.
-
-> **Importante:** lee la sección [Supuestos a validar](#supuestos-a-validar). Tomé varias
-> decisiones de diseño; si alguna no calza, avísame y ajusto el esquema.
-
-> **Estado por fases (PLAN.md).** El SQL ejecutable vive en `docs/sql/` y se aplica en orden:
-> - **Fase 1** — `docs/sql/fase-1-academic-catalog.sql`: catálogo académico
->   (`campuses`, `faculties`, `careers`) + columnas `campus_id/faculty_id/career_id`
->   en `profiles` + extensión del trigger `handle_new_user`.
-> - **Fase 2** — `docs/sql/fase-2-bookings.sql`: reservas (`bookings`) + RLS.
-> - **Fase 3** — `docs/sql/fase-3-hardening.sql`: fuerza dominio `@udd.cl` server-side,
->   oculta a nivel BD las columnas de contacto del tutor (`contact_type/contact_value`)
->   y reafirma RLS en todo el esquema.
-> - **Fase 4** — `docs/sql/fase-4-person-tutor-architecture.sql`: arquitectura
->   persona/tutor. Renombra `profiles.year` → `admission_year`, agrega
->   `teachers.status` (`incomplete|pending|active|inactive|rejected`) y
->   `teachers.updated_at`, y extiende `handle_new_user` para crear la fila
->   `teachers` cuando `wants_to_teach = true`. RLS lista solo tutores `active`.
->
-> Notas de modelo: `faculties` **no** tiene `campus_id` (una facultad puede existir en
-> varios campus); las facultades por campus se derivan de `careers`. La tabla `bookings`
-> **no** duplica datos del alumno: viven en `profiles` (`student_id` → `profiles`).
+Referencia del esquema **actual y deployado**. Se mantiene sincronizado con los scripts en `docs/sql/`.  
+Las migraciones se aplican **en orden**: fase-1 → fase-2 → fase-3 → fase-4 → fase-5.
 
 ---
 
-## 1. Resumen del modelo
+## 1. Modelo conceptual
 
-La app conecta **estudiantes UDD** con **tutores particulares** (que también son estudiantes UDD).
+La app conecta **estudiantes UDD** con **tutores** (que también son estudiantes UDD).
 
-El **centro del sistema es `profiles`**: representa al usuario logueado (vía Supabase Auth) e
-incluye su carrera, año de ingreso y los **ramos que está cursando**. Un perfil puede, además, ofrecerse
-como tutor (ficha en `teachers`). **No existe un "rol student" persistido**: cualquier persona
-autenticada puede reservar. Ser tutor es una faceta adicional (fila 1:1 en `teachers`).
+| Tabla | Qué representa |
+|---|---|
+| `profiles` | Persona UDD ligada a Supabase Auth. Toda cuenta puede reservar tutorías. |
+| `subjects` | Catálogo de ramos (Cálculo I, Programación…). |
+| `profile_subjects` | Ramos que un perfil **está cursando** (N:N). |
+| `teachers` | Faceta de tutor de un perfil (precio, descripción, estado). 1:1 con `profiles`. |
+| `teacher_subjects` | Ramos que un tutor **enseña** (N:N). |
+| `availability_slots` | Bloques horarios de un tutor (fecha + hora). |
+| `reviews` | Reseñas que un perfil deja a un tutor. |
+| `campuses` | Campus UDD (Santiago, Concepción). |
+| `faculties` | Facultades. Sin `campus_id`; una facultad puede existir en varios campus. |
+| `careers` | Carreras. Referencia a `faculties` y `campuses`. |
+| `bookings` | Reservas de un estudiante a un tutor. |
 
-| Tabla | Qué guarda |
-|-------|------------|
-| **`profiles`** | **Persona UDD: carrera, año de ingreso, ramos que cursa, avatar. Ligado a Supabase Auth.** |
-| `profile_subjects` | Ramos que el usuario **está cursando** (N:N perfil ↔ ramo) |
-| `subjects` | Catálogo de ramos (Cálculo I, Programación, etc.) |
-| `teachers` | Ficha de tutoría de un perfil (precio, descripción, contacto, **estado**) |
-| `teacher_subjects` | Ramos que el tutor **enseña** (N:N tutor ↔ ramo) |
-| `availability_slots` | Bloques de horario del tutor (fecha + hora + disponible) |
-| `reviews` | Reseñas que un perfil deja a un tutor |
-| `campuses` / `faculties` / `careers` | Catálogo académico UDD (Fase 1) |
-| `bookings` | Reservas que un estudiante hace a un tutor (Fase 2) |
+Relaciones clave:
+- `profiles` ← 1:1 → `teachers` (ser tutor es una faceta opcional, no un rol).
+- `profiles` → `campus_id / faculty_id / career_id` (FKs al catálogo académico).
+- La facultad de un campus se **deriva** de las carreras activas: no existe `careers.campus_id = faculty.campus_id`.
 
 ---
 
-## 2. Diagrama de relaciones (texto)
+## 2. Tablas
+
+### `profiles`
+
+Creada automáticamente por el trigger `handle_new_user` al registrar un usuario.
+
+| Columna | Tipo | Nulo | Notas |
+|---|---|---|---|
+| `id` | `uuid` | NO | PK. FK → `auth.users(id)` on delete cascade. |
+| `full_name` | `text` | NO | |
+| `email` | `text` | sí | Correo `@udd.cl`. |
+| `career` | `text` | NO | Nombre legible de la carrera (texto libre). |
+| `year` | `text` | NO | Mantenido por compatibilidad. Usar `admission_year`. |
+| `admission_year` | `text` | NO | Año de ingreso, ej. `"2023"`. |
+| `avatar_url` | `text` | sí | |
+| `bio` | `text` | NO | Default `''`. |
+| `campus_id` | `text` | sí | FK → `campuses(id)`. |
+| `faculty_id` | `text` | sí | FK → `faculties(id)`. |
+| `career_id` | `text` | sí | FK → `careers(id)`. |
+| `created_at` | `timestamptz` | NO | Default `now()`. |
+| `updated_at` | `timestamptz` | NO | Default `now()`. |
+
+---
+
+### `subjects`
+
+| Columna | Tipo | Nulo | Notas |
+|---|---|---|---|
+| `id` | `uuid` | NO | PK. Default `gen_random_uuid()`. |
+| `name` | `text` | NO | Unique. |
+
+---
+
+### `profile_subjects`
+
+N:N entre perfiles y ramos que cursan.
+
+| Columna | Tipo | Nulo | Notas |
+|---|---|---|---|
+| `profile_id` | `uuid` | NO | PK parcial. FK → `profiles(id)` on delete cascade. |
+| `subject_id` | `uuid` | NO | PK parcial. FK → `subjects(id)` on delete cascade. |
+
+---
+
+### `teachers`
+
+Faceta de tutor. 1:1 con `profiles` (`profile_id` es `unique`).
+
+| Columna | Tipo | Nulo | Notas |
+|---|---|---|---|
+| `id` | `uuid` | NO | PK. Default `gen_random_uuid()`. |
+| `profile_id` | `uuid` | sí | **Unique.** FK → `profiles(id)` on delete cascade. |
+| `about` | `text` | NO | Default `''`. |
+| `price_min` | `integer` | **sí** | En pesos CLP. Null mientras `status = 'incomplete'`. |
+| `price_max` | `integer` | **sí** | En pesos CLP. Null mientras `status = 'incomplete'`. |
+| `contact_type` | `text` | **sí** | `'email'` o `'phone'`. Null mientras `status = 'incomplete'`. **Oculto vía grant.** |
+| `contact_value` | `text` | **sí** | Null mientras `status = 'incomplete'`. **Oculto vía grant.** |
+| `rating` | `numeric(2,1)` | NO | Default `0`. Actualizado por trigger. |
+| `review_count` | `integer` | NO | Default `0`. Actualizado por trigger. |
+| `status` | `text` | NO | Default `'incomplete'`. Check: `incomplete \| pending \| active \| inactive \| rejected`. |
+| `weekly_availability` | `jsonb` | NO | Default `'[]'`. Patrón semanal `[{weekday,hour}]` (fase-5). Se expande a `availability_slots`. |
+| `created_at` | `timestamptz` | NO | Default `now()`. |
+| `updated_at` | `timestamptz` | NO | Default `now()`. |
+
+**Estados del tutor:**
+- `incomplete` — creado desde el registro (`wants_to_teach = true`); aún no completó el onboarding.
+- `pending` — completó onboarding; espera activación por un admin.
+- `active` — visible en el catálogo público y reservable.
+- `inactive` — pausado por el tutor.
+- `rejected` — rechazado por admin.
+
+---
+
+### `teacher_subjects`
+
+N:N entre tutores y ramos que enseñan.
+
+| Columna | Tipo | Nulo | Notas |
+|---|---|---|---|
+| `teacher_id` | `uuid` | NO | PK parcial. FK → `teachers(id)` on delete cascade. |
+| `subject_id` | `uuid` | NO | PK parcial. FK → `subjects(id)` on delete cascade. |
+
+---
+
+### `availability_slots`
+
+Superficie reservable (date-based) que consume el catálogo. Desde fase-5 se
+**materializa** desde `teachers.weekly_availability` vía `expand_tutor_availability`
+(próximas 2 semanas); los tutores no la editan directamente.
+
+| Columna | Tipo | Nulo | Notas |
+|---|---|---|---|
+| `id` | `uuid` | NO | PK. Default `gen_random_uuid()`. |
+| `teacher_id` | `uuid` | NO | FK → `teachers(id)` on delete cascade. |
+| `date` | `date` | NO | |
+| `hour` | `text` | NO | Formato `"HH:MM"`, ej. `"09:00"`. |
+| `available` | `boolean` | NO | Default `true`. |
+
+Constraint: `unique (teacher_id, date, hour)`.
+
+---
+
+### `reviews`
+
+| Columna | Tipo | Nulo | Notas |
+|---|---|---|---|
+| `id` | `uuid` | NO | PK. Default `gen_random_uuid()`. |
+| `teacher_id` | `uuid` | NO | FK → `teachers(id)` on delete cascade. |
+| `author_id` | `uuid` | NO | FK → `profiles(id)` on delete cascade. El nombre se lee via join. |
+| `rating` | `integer` | NO | Check: entre 1 y 5. |
+| `comment` | `text` | NO | Default `''`. |
+| `date` | `date` | NO | Default `current_date`. |
+| `created_at` | `timestamptz` | NO | Default `now()`. |
+
+Constraint: `unique (teacher_id, author_id)` — un perfil deja una sola reseña por tutor.
+
+---
+
+### `campuses`
+
+| Columna | Tipo | Nulo | Notas |
+|---|---|---|---|
+| `id` | `text` | NO | PK. Ej. `'campus-stgo'`, `'campus-ccpc'`. |
+| `name` | `text` | NO | Ej. `'Santiago'`. |
+| `slug` | `text` | NO | Ej. `'santiago'`. |
+| `active` | `boolean` | NO | Default `true`. |
+
+Datos sembrados: `campus-stgo` (Santiago) y `campus-ccpc` (Concepción).
+
+---
+
+### `faculties`
+
+| Columna | Tipo | Nulo | Notas |
+|---|---|---|---|
+| `id` | `text` | NO | PK. Ej. `'fac-ingenieria-stgo'`. |
+| `name` | `text` | NO | Ej. `'Ingeniería'`. |
+| `slug` | `text` | NO | |
+| `active` | `boolean` | NO | Default `true`. |
+
+Sin columna `campus_id`: las facultades disponibles en un campus se derivan de las carreras activas de ese campus. 11 facultades sembradas.
+
+---
+
+### `careers`
+
+| Columna | Tipo | Nulo | Notas |
+|---|---|---|---|
+| `id` | `text` | NO | PK. Ej. `'career-stgo-ingenieria-ing-civil-industrial'`. |
+| `faculty_id` | `text` | NO | FK → `faculties(id)`. |
+| `campus_id` | `text` | NO | FK → `campuses(id)`. |
+| `name` | `text` | NO | Ej. `'Ingeniería Civil Industrial'`. |
+| `slug` | `text` | NO | |
+| `active` | `boolean` | NO | Default `true`. |
+
+35 carreras sembradas (source of truth: `scripts/mock-api/server.mjs`).
+
+---
+
+### `bookings`
+
+| Columna | Tipo | Nulo | Notas |
+|---|---|---|---|
+| `id` | `uuid` | NO | PK. Default `gen_random_uuid()`. |
+| `teacher_id` | `uuid` | NO | FK → `teachers(id)`. |
+| `student_id` | `uuid` | NO | FK → `profiles(id)`. Default `auth.uid()`. |
+| `date` | `date` | NO | |
+| `hour` | `text` | NO | Formato `"HH:MM"`. |
+| `status` | `text` | NO | Default `'pending'`. Check: `pending \| confirmed \| rejected \| cancelled`. |
+| `message` | `text` | sí | Mensaje opcional del estudiante. |
+| `created_at` | `timestamptz` | NO | Default `now()`. |
+
+Índices: `bookings_student_idx (student_id)`, `bookings_teacher_idx (teacher_id)`.
+
+---
+
+## 3. Row Level Security
+
+RLS activa en todas las tablas.
+
+### Catálogo académico (`campuses`, `faculties`, `careers`, `subjects`)
+
+| Tabla | Operación | Quién | Condición |
+|---|---|---|---|
+| `campuses` | SELECT | todos | `true` |
+| `faculties` | SELECT | todos | `true` |
+| `careers` | SELECT | todos | `true` |
+| `subjects` | SELECT | todos | `true` |
+
+### `profiles`
+
+| Operación | Quién | Condición |
+|---|---|---|
+| SELECT | todos | `true` |
+| INSERT | autenticado | `auth.uid() = id` |
+| UPDATE | autenticado | `auth.uid() = id` |
+
+### `teachers`
+
+> **Nota de columnas:** `contact_type` y `contact_value` están **excluidos de los grants** para `anon` y `authenticated`. No viajan al cliente a través de PostgREST. Para exponerlos tras una reserva confirmada, se implementará una función `SECURITY DEFINER`.
+
+Columnas accesibles vía API: `id, profile_id, about, price_min, price_max, rating, review_count, status, updated_at, created_at`.
+
+| Operación | Quién | Condición |
+|---|---|---|
+| SELECT | todos (anon) | `status = 'active'` |
+| SELECT | autenticado | `status = 'active'` OR `profile_id = auth.uid()` |
+| INSERT | autenticado | `profile_id = auth.uid()` |
+
+### `teacher_subjects` / `availability_slots` / `reviews`
+
+| Operación | Quién | Condición |
+|---|---|---|
+| SELECT | todos | `true` |
+
+Writes de `reviews`:
+
+| Operación | Quién | Condición |
+|---|---|---|
+| INSERT | autenticado | `auth.uid() = author_id` |
+| UPDATE | autenticado | `auth.uid() = author_id` |
+
+### `profile_subjects`
+
+| Operación | Quién | Condición |
+|---|---|---|
+| SELECT | todos | `true` |
+| ALL (insert/update/delete) | autenticado | `auth.uid() = profile_id` |
+
+### `bookings`
+
+| Operación | Quién | Condición |
+|---|---|---|
+| SELECT | autenticado | `auth.uid() = student_id` |
+| INSERT | autenticado | `auth.uid() = student_id` |
+| UPDATE (cancelar) | autenticado | `auth.uid() = student_id` |
+
+---
+
+## 4. Triggers y funciones
+
+### `handle_new_user` → disparado por `on_auth_user_created`
+
+Se ejecuta `AFTER INSERT ON auth.users`. Crea la fila en `profiles` con los metadatos del registro. Si `raw_user_meta_data->>'wants_to_teach' = 'true'`, también crea la fila en `teachers` con `status = 'incomplete'`.
+
+Metadatos que consume del `signUp`:
+
+| Campo en `options.data` | Destino en DB |
+|---|---|
+| `full_name` | `profiles.full_name` |
+| `career` | `profiles.career` |
+| `admission_year` | `profiles.admission_year` |
+| `campus_id` | `profiles.campus_id` |
+| `faculty_id` | `profiles.faculty_id` |
+| `career_id` | `profiles.career_id` |
+| `wants_to_teach` | Si `'true'` → inserta fila en `teachers` |
+
+---
+
+### `refresh_teacher_rating` → disparado por `trg_refresh_rating`
+
+Se ejecuta `AFTER INSERT OR UPDATE OR DELETE ON reviews`. Recalcula `teachers.rating` (promedio con 1 decimal) y `teachers.review_count` para el tutor afectado.
+
+---
+
+### `enforce_udd_email` → disparado por `enforce_udd_email_before_insert`
+
+Se ejecuta `BEFORE INSERT ON auth.users`. Rechaza registros cuyo email no termine en `@udd.cl`. Es la barrera server-side que complementa la validación del cliente en `login.page` y `register.page`.
+
+---
+
+### Publicación del perfil tutor (fase-5) — RPCs `SECURITY DEFINER`
+
+El editor del perfil tutor (precio, ramos, contacto, disponibilidad semanal) usa estas funciones; concentran la lógica y permiten acceder al contacto (oculto por grant).
+
+| Función | Qué hace |
+|---|---|
+| `get_my_tutor_profile()` → `json` | Devuelve el perfil tutor editable de `auth.uid()` (incluye `contact_*`, `subject_ids[]`, `weekly_availability[]`), o `null` si no tiene ficha. |
+| `save_tutor_profile(p_about, p_price_min, p_price_max, p_contact_type, p_contact_value, p_subject_ids uuid[], p_weekly jsonb)` → `text` | Crea/actualiza la ficha tutor, reemplaza sus ramos, guarda el patrón semanal, lo materializa y decide el `status`: `active` si está completo (precio + contacto + ≥1 ramo + ≥1 bloque), si no `incomplete`. Devuelve el status. |
+| `expand_tutor_availability(p_teacher uuid)` | Materializa `weekly_availability` en `availability_slots` para hoy..+13 días (idempotente; limpia futuros fuera del patrón). |
+| `expand_all_tutor_availability()` | Reexpande a todos los tutores. Pensada para un job diario (pg_cron) que "rueda" la ventana de 2 semanas. |
+
+`get_my_tutor_profile` y `save_tutor_profile` tienen `grant execute ... to authenticated`.
+
+---
+
+## 5. Diagramas de relaciones
 
 ```
 auth.users
-    │ 1:1
+    │ 1:1 (on_auth_user_created)
     ▼
 profiles ──< profile_subjects >── subjects ──< teacher_subjects >── teachers
-    │                                                                  │
-    ├──< reviews (author_id) >──────────────────────────────────────┘ (teacher_id)
-    │                                                                  │
-    └── (1:1 opcional) ───────────────────────────────────────────────┤
-                                                                       │
-                                              availability_slots >─────┘
-```
-
-- `profiles` es el usuario. Cursa ramos (`profile_subjects`).
-- `teachers` es la **faceta de tutor** de un perfil: enseña ramos (`teacher_subjects`),
-  tiene disponibilidad (`availability_slots`) y recibe reseñas (`reviews`).
-- Cada reseña la escribe un perfil (`reviews.author_id`).
-
----
-
-## 3. SQL para crear la base de datos
-
-> Pégalo en **Supabase → SQL Editor → New query**. Pensado para una base limpia.
-> Si ya creaste tablas con la versión anterior del doc, mira la sección
-> [Qué cambió / qué recrear](#5-qué-cambió-respecto-a-la-versión-anterior).
-
-```sql
--- =========================================================
--- Mentorly — esquema (profiles como centro)
--- =========================================================
-create extension if not exists "pgcrypto";
-
--- ---------- CATÁLOGO DE RAMOS ----------
-create table public.subjects (
-  id    uuid primary key default gen_random_uuid(),
-  name  text not null unique
-);
-
--- ---------- PERFILES (USUARIO UDD — CENTRO DEL SISTEMA) ----------
-create table public.profiles (
-  id          uuid primary key references auth.users(id) on delete cascade,
-  full_name   text        not null,
-  email       text,                              -- normalmente el correo @udd.cl
-  career      text        not null,              -- carrera que estudia
-  year        text        not null,              -- año que cursa, ej. "3er año"
-  avatar_url  text,
-  bio         text        not null default '',   -- descripción libre del usuario
-  created_at  timestamptz not null default now(),
-  updated_at  timestamptz not null default now()
-);
-
--- ---------- RAMOS QUE EL USUARIO ESTÁ CURSANDO ----------
-create table public.profile_subjects (
-  profile_id uuid not null references public.profiles(id) on delete cascade,
-  subject_id uuid not null references public.subjects(id) on delete cascade,
-  primary key (profile_id, subject_id)
-);
-
--- ---------- TUTORES (faceta de tutoría de un perfil) ----------
-create table public.teachers (
-  id            uuid primary key default gen_random_uuid(),
-  -- Un tutor ES un perfil. 1:1 con profiles (ver supuesto #1)
-  profile_id    uuid unique references public.profiles(id) on delete cascade,
-  about         text        not null default '',
-  -- Precio normalizado en pesos (ver supuesto #2)
-  -- Nullable: un perfil tutor `incomplete` aún no define precio.
-  price_min     integer,
-  price_max     integer,
-  -- Contacto (ver supuesto #3). Nullable hasta completar onboarding.
-  contact_type  text        check (contact_type in ('email','phone')),
-  contact_value text,
-  -- Métricas derivadas de reviews (ver supuesto #4)
-  rating        numeric(2,1) not null default 0,
-  review_count  integer      not null default 0,
-  -- Estado del perfil tutor (Fase 4):
-  --   incomplete → creado desde registro; pendiente de onboarding.
-  --   pending    → onboarding completado; espera activación admin.
-  --   active     → visible en el catálogo público y reservable.
-  --   inactive   → pausado por el tutor.
-  --   rejected   → rechazado por admin.
-  status        text         not null default 'incomplete'
-                 check (status in ('incomplete','pending','active','inactive','rejected')),
-  created_at    timestamptz  not null default now(),
-  updated_at    timestamptz  not null default now()
-);
-
--- ---------- RAMOS QUE EL TUTOR ENSEÑA ----------
-create table public.teacher_subjects (
-  teacher_id uuid not null references public.teachers(id) on delete cascade,
-  subject_id uuid not null references public.subjects(id) on delete cascade,
-  primary key (teacher_id, subject_id)
-);
-
--- ---------- DISPONIBILIDAD ----------
-create table public.availability_slots (
-  id         uuid primary key default gen_random_uuid(),
-  teacher_id uuid not null references public.teachers(id) on delete cascade,
-  date       date    not null,
-  hour       text    not null,            -- "09:00" (ver supuesto #5)
-  available  boolean not null default true,
-  unique (teacher_id, date, hour)
-);
-
--- ---------- RESEÑAS ----------
-create table public.reviews (
-  id         uuid primary key default gen_random_uuid(),
-  teacher_id uuid not null references public.teachers(id) on delete cascade,
-  author_id  uuid not null references public.profiles(id) on delete cascade,
-  rating     integer not null check (rating between 1 and 5),
-  comment    text    not null default '',
-  date       date    not null default current_date,
-  created_at timestamptz not null default now(),
-  -- un perfil deja una sola reseña por tutor (ver supuesto #6)
-  unique (teacher_id, author_id)
-);
-
--- ---------- ÍNDICES ÚTILES ----------
-create index on public.profile_subjects (subject_id);
-create index on public.teacher_subjects (subject_id);
-create index on public.availability_slots (teacher_id, date);
-create index on public.reviews (teacher_id);
-```
-
-> El **nombre del autor** de una reseña ya no se guarda como texto: se obtiene con un join a
-> `profiles.full_name` desde `author_id`. Así el dato vive en un solo lugar.
-
----
-
-## 4. (Opcional) Recalcular rating y review_count
-
-```sql
-create or replace function public.refresh_teacher_rating()
-returns trigger language plpgsql as $$
-declare
-  t_id uuid := coalesce(new.teacher_id, old.teacher_id);
-begin
-  update public.teachers t set
-    review_count = (select count(*) from public.reviews r where r.teacher_id = t_id),
-    rating = coalesce((select round(avg(r.rating)::numeric, 1)
-                       from public.reviews r where r.teacher_id = t_id), 0)
-  where t.id = t_id;
-  return null;
-end $$;
-
-create trigger trg_refresh_rating
-after insert or update or delete on public.reviews
-for each row execute function public.refresh_teacher_rating();
-```
-
-### Crear el perfil automáticamente al registrarse (recomendado)
-
-Para que cada usuario nuevo de Auth tenga su fila en `profiles`:
-
-```sql
-create or replace function public.handle_new_user()
-returns trigger language plpgsql security definer as $$
-begin
-  insert into public.profiles (id, full_name, email, career, year)
-  values (
-    new.id,
-    coalesce(new.raw_user_meta_data->>'full_name', ''),
-    new.email,
-    coalesce(new.raw_user_meta_data->>'career', ''),
-    coalesce(new.raw_user_meta_data->>'year', '')
-  );
-  return new;
-end $$;
-
-create trigger on_auth_user_created
-after insert on auth.users
-for each row execute function public.handle_new_user();
+    │  │                                                                 │
+    │  │ FK campus_id / faculty_id / career_id                          │
+    │  ├──► campuses                                                     │
+    │  ├──► faculties                                                    │
+    │  └──► careers                                                      │
+    │                                                                    │
+    ├──< bookings (student_id) ──────────────────────► teachers (teacher_id)
+    │                                                                    │
+    └──< reviews (author_id) ───────────────────────► teachers (teacher_id)
+                                                                         │
+                                              availability_slots >───────┘
 ```
 
 ---
 
-## 5. Qué cambió respecto a la versión anterior
+## 6. Seed
 
-Si ya creaste las tablas con el doc anterior, estas son las **tablas a recrear**:
+| Qué | Script |
+|---|---|
+| Catálogo académico (campuses, faculties, careers) | `docs/sql/fase-1-academic-catalog.sql` |
+| Tutor de demo (para probar reservas) | `docs/sql/seed-demo-tutor.sql` |
 
-| Tabla | Cambio |
-|-------|--------|
-| **`profiles`** | **RECREAR.** Antes era opcional y mínima. Ahora es obligatoria y central: agrega `career`, `year`, `email`, `bio`, `avatar_url`. |
-| **`profile_subjects`** | **NUEVA.** Ramos que el usuario está cursando. |
-| **`teachers`** | **RECREAR.** Se le agrega `profile_id` (1:1 con `profiles`) y se le quitan `name`, `career`, `year`, `avatar_url` (ahora viven en `profiles`). |
-| **`reviews`** | **RECREAR.** Se quita `student_name` (texto) y `author_id` pasa a ser **obligatorio** (`not null`) + restricción única por tutor. |
-| `subjects`, `teacher_subjects`, `availability_slots` | Sin cambios. |
-
-SQL para recrear solo lo que cambió (orden importa por las FKs):
-
-```sql
-drop table if exists public.reviews          cascade;
-drop table if exists public.teachers         cascade;  -- también arrastra teacher_subjects/slots
-drop table if exists public.profile_subjects cascade;
-drop table if exists public.profiles         cascade;
--- Luego vuelve a ejecutar, en este orden, los CREATE de la sección 3:
--- profiles → profile_subjects → teachers → teacher_subjects → availability_slots → reviews
-```
-
-> Como `teachers` cambió, `teacher_subjects` y `availability_slots` se borran por el `cascade`;
-> vuelve a crearlas también (su definición no cambió).
+El seed del tutor demo requiere un usuario ya registrado con email `tutor.demo@udd.cl`. Ver instrucciones dentro del archivo.
 
 ---
 
-## 6. Seguridad (RLS) — recomendado
+## 7. Estado actual del proyecto Supabase
 
-```sql
-alter table public.profiles           enable row level security;
-alter table public.profile_subjects   enable row level security;
-alter table public.subjects           enable row level security;
-alter table public.teachers           enable row level security;
-alter table public.teacher_subjects   enable row level security;
-alter table public.availability_slots enable row level security;
-alter table public.reviews            enable row level security;
+| Tabla | Estado |
+|---|---|
+| `campuses` | 2 filas (Santiago, Concepción) |
+| `faculties` | 11 filas |
+| `careers` | 35 filas |
+| `subjects` | presente (sin seed cargado aún) |
+| `teachers` | 0 tutores activos (RLS columnas `contact_*` ocultas) |
+| `bookings` | 0 reservas |
+| `profiles` | 1 fila (usuario de prueba de integración) |
 
--- Lectura pública del catálogo de tutores (solo activos)
-create policy "lectura publica subjects" on public.subjects           for select using (true);
-create policy "ver tutores activos"     on public.teachers           for select using (status = 'active');
--- El propio usuario puede ver su perfil tutor (aunque esté incomplete)
-create policy "ver mi perfil tutor"     on public.teachers
-  for select to authenticated using (profile_id = auth.uid());
-create policy "lectura publica ts"       on public.teacher_subjects   for select using (true);
-create policy "lectura publica slots"    on public.availability_slots for select using (true);
-create policy "lectura publica reviews"  on public.reviews            for select using (true);
-
--- Perfiles: cualquiera puede ver perfiles; cada quien edita el suyo
-create policy "ver perfiles"      on public.profiles for select using (true);
-create policy "editar mi perfil"  on public.profiles for update using (auth.uid() = id);
-create policy "crear mi perfil"   on public.profiles for insert with check (auth.uid() = id);
-
--- Ramos que cursa: cada quien gestiona los suyos
-create policy "ver ramos cursados"   on public.profile_subjects for select using (true);
-create policy "editar mis ramos"     on public.profile_subjects
-  for all using (auth.uid() = profile_id) with check (auth.uid() = profile_id);
-
--- Reseñas: solo el autor autenticado puede crear/editar la suya
-create policy "crear review"  on public.reviews
-  for insert to authenticated with check (auth.uid() = author_id);
-create policy "editar review" on public.reviews
-  for update to authenticated using (auth.uid() = author_id);
-```
-
----
-
-## 7. Datos de ejemplo (seed mínimo)
-
-> Los perfiles dependen de usuarios reales en `auth.users`, así que el seed completo se hace
-> después de tener al menos un usuario registrado. Para el catálogo:
-
-```sql
-insert into public.subjects (name) values
-  ('Cálculo I'), ('Cálculo II'), ('Álgebra Lineal'), ('Programación')
-on conflict (name) do nothing;
-```
-
-Para migrar los 9 tutores mock necesito que confirmes el esquema; luego genero el script
-(crea usuarios de prueba en Auth → perfiles → fichas de tutor → ramos → reseñas).
-
----
-
-## 8. Qué necesito de ti para conectar la app
-
-Cuando el proyecto esté en Supabase, pásame (o pega en `src/environments/`):
-
-1. **Project URL** — `https://xxxxxxxx.supabase.co`
-2. **anon public key** — la clave pública. La `service_role` **NO** va en el frontend.
-3. ¿Vas a usar **email/password** o login con Google/correo UDD? (define el flujo de Auth).
-
-Con eso instalo `@supabase/supabase-js`, creo el cliente y reemplazo el `TeacherService`
-(que hoy usa mocks) por consultas reales, más un `AuthService`/`ProfileService`.
-
----
-
-## Supuestos a validar
-
-1. **Un tutor es un perfil (relación 1:1).** `teachers.profile_id` apunta a `profiles`. Es decir,
-   para ser tutor primero eres usuario. *(Alternativa: tutores totalmente independientes de los
-   perfiles — pero rompería la idea de "profiles como centro".)*
-
-2. **`priceRange` → `price_min` + `price_max` (enteros, en pesos).** El formato visual
-   `"$8.000-$12.000"` se reconstruye en la app.
-
-3. **Contacto único embebido en `teachers`** (`contact_type` + `contact_value`),
-   nullable hasta completar onboarding. *(Si el tutor pudiera tener varios
-   contactos, iría a una tabla aparte. Nota: con login podríamos incluso
-   usar el `email` del perfil como contacto por defecto.)*
-
-4. **`rating` y `review_count` derivados** de `reviews` vía trigger (sección 4).
-
-5. **`hour` como texto `"HH:MM"`**, igual que el modelo. *(Alternativa: tipo `time`.)*
-
-6. **Una reseña por perfil y por tutor** (`unique (teacher_id, author_id)`). *(Si permites varias
-   reseñas del mismo usuario al mismo tutor, quito la restricción.)*
-
-7. **`admission_year` como texto** (`"2023"`) en `profiles` y en la UI. Representa
-   el año de ingreso a la carrera. *(Antes era `year` tipo "3er año"; Fase 4 lo
-   renombra a `admission_year`.)*
-
-8. **El catálogo es de lectura pública**; crear/editar perfiles, ramos y reseñas requiere login.
-
-9. **`profiles` se crea automáticamente** al registrarse en Auth (trigger `handle_new_user`),
-   tomando `full_name`, `career` y `year` de los metadatos del registro. *(Si prefieres crear el
-   perfil manualmente desde la app tras el signup, quito el trigger.)*
+**Bloqueante activo:** el registro por correo está **desactivado** en el proyecto (`Email signups are disabled`). Para que `/register` funcione: Dashboard → Authentication → Providers → Email → activar "Allow new users to sign up".
