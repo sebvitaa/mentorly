@@ -117,15 +117,25 @@ create table public.teachers (
   profile_id    uuid unique references public.profiles(id) on delete cascade,
   about         text        not null default '',
   -- Precio normalizado en pesos (ver supuesto #2)
-  price_min     integer     not null,
-  price_max     integer     not null,
-  -- Contacto (ver supuesto #3)
-  contact_type  text        not null check (contact_type in ('email','phone')),
-  contact_value text        not null,
+  -- Nullable: un perfil tutor `incomplete` aún no define precio.
+  price_min     integer,
+  price_max     integer,
+  -- Contacto (ver supuesto #3). Nullable hasta completar onboarding.
+  contact_type  text        check (contact_type in ('email','phone')),
+  contact_value text,
   -- Métricas derivadas de reviews (ver supuesto #4)
   rating        numeric(2,1) not null default 0,
   review_count  integer      not null default 0,
-  created_at    timestamptz  not null default now()
+  -- Estado del perfil tutor (Fase 4):
+  --   incomplete → creado desde registro; pendiente de onboarding.
+  --   pending    → onboarding completado; espera activación admin.
+  --   active     → visible en el catálogo público y reservable.
+  --   inactive   → pausado por el tutor.
+  --   rejected   → rechazado por admin.
+  status        text         not null default 'incomplete'
+                 check (status in ('incomplete','pending','active','inactive','rejected')),
+  created_at    timestamptz  not null default now(),
+  updated_at    timestamptz  not null default now()
 );
 
 -- ---------- RAMOS QUE EL TUTOR ENSEÑA ----------
@@ -256,9 +266,12 @@ alter table public.teacher_subjects   enable row level security;
 alter table public.availability_slots enable row level security;
 alter table public.reviews            enable row level security;
 
--- Lectura pública del catálogo de tutores
+-- Lectura pública del catálogo de tutores (solo activos)
 create policy "lectura publica subjects" on public.subjects           for select using (true);
-create policy "lectura publica teachers" on public.teachers           for select using (true);
+create policy "ver tutores activos"     on public.teachers           for select using (status = 'active');
+-- El propio usuario puede ver su perfil tutor (aunque esté incomplete)
+create policy "ver mi perfil tutor"     on public.teachers
+  for select to authenticated using (profile_id = auth.uid());
 create policy "lectura publica ts"       on public.teacher_subjects   for select using (true);
 create policy "lectura publica slots"    on public.availability_slots for select using (true);
 create policy "lectura publica reviews"  on public.reviews            for select using (true);
@@ -320,8 +333,9 @@ Con eso instalo `@supabase/supabase-js`, creo el cliente y reemplazo el `Teacher
 2. **`priceRange` → `price_min` + `price_max` (enteros, en pesos).** El formato visual
    `"$8.000-$12.000"` se reconstruye en la app.
 
-3. **Contacto único embebido en `teachers`** (`contact_type` + `contact_value`). *(Si el tutor
-   pudiera tener varios contactos, iría a una tabla aparte. Nota: con login podríamos incluso
+3. **Contacto único embebido en `teachers`** (`contact_type` + `contact_value`),
+   nullable hasta completar onboarding. *(Si el tutor pudiera tener varios
+   contactos, iría a una tabla aparte. Nota: con login podríamos incluso
    usar el `email` del perfil como contacto por defecto.)*
 
 4. **`rating` y `review_count` derivados** de `reviews` vía trigger (sección 4).

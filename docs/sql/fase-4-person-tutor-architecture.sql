@@ -42,21 +42,13 @@ alter table public.teachers
 alter table public.teachers
   add column if not exists updated_at timestamptz not null default now();
 
--- Permitir perfiles tutor 'incomplete' SIN precio ni contacto todavía.
--- (El trigger handle_new_user inserta teachers(profile_id, status) sin estos
---  campos; si fueran NOT NULL sin default, el registro de tutor fallaría.)
+-- ---------- 4.2b Hacer nullable los campos de onboarding ----------
+-- Un perfil tutor `incomplete` todavía no definió precio, contacto ni bio.
+-- Esos campos se completan en el onboarding antes de pasar a `pending`.
 alter table public.teachers alter column price_min     drop not null;
 alter table public.teachers alter column price_max     drop not null;
 alter table public.teachers alter column contact_type  drop not null;
 alter table public.teachers alter column contact_value drop not null;
-
--- IMPORTANTE: la Fase 3 revocó el SELECT de tabla en `teachers` y lo concedió
--- columna por columna (sin `status`, que aún no existía). El catálogo necesita
--- leer/filtrar por `status`, así que concedemos SELECT sobre esa columna.
-grant select (status) on public.teachers to anon, authenticated;
-
--- Asegurar 1:1 profile ↔ teacher (ya existe unique en profile_id; lo reforzamos).
--- (No es estrictamente necesario, pero deja explícita la intención.)
 
 -- ---------- 4.3 Trigger handle_new_user actualizado ----------
 -- Crea el perfil con admission_year y, si wants_to_teach = 'true',
@@ -93,23 +85,28 @@ end $$;
 -- (El trigger `on_auth_user_created` ya existe desde fases anteriores;
 --  no lo recreamos para no duplicar.)
 
--- ---------- 4.4 RLS para teachers ----------
--- Ya está habilitada RLS en Fase 3; ajustamos políticas de escritura.
+-- ---------- 4.4 Grants de columnas nuevas en teachers ----------
+-- Fase 3 revocó el SELECT general y concedió por columna, excluyendo
+-- contacto. Ahora agregamos `status` y `updated_at` a las columnas legibles.
+revoke select on public.teachers from anon, authenticated;
+grant select (
+  id, profile_id, about, price_min, price_max, rating, review_count,
+  status, updated_at, created_at
+) on public.teachers to anon, authenticated;
 
--- Lectura pública SÓLO de tutores activos (el catálogo visible).
--- Nota: la política existente "lectura publica teachers" (si existe) permite
--- ver todos; la reemplazamos por una más restrictiva.
+-- ---------- 4.5 RLS para teachers ----------
+-- Reemplazamos las políticas de Fase 3 por unas más granulares:
+
+-- Catálogo público: solo tutores activos.
 drop policy if exists "lectura publica teachers" on public.teachers;
 drop policy if exists "ver tutores activos" on public.teachers;
 create policy "ver tutores activos" on public.teachers
   for select using (status = 'active');
 
--- El propio usuario puede ver SU perfil tutor aunque no esté activo
--- (necesario para que /profile lea su tutor 'incomplete').
+-- El propio usuario puede ver su perfil tutor (aunque esté incomplete).
 drop policy if exists "ver mi perfil tutor" on public.teachers;
 create policy "ver mi perfil tutor" on public.teachers
-  for select to authenticated
-  using (profile_id = auth.uid());
+  for select to authenticated using (profile_id = auth.uid());
 
 -- El propio usuario puede crear su perfil tutor (onboarding futuro).
 drop policy if exists "crear mi perfil tutor" on public.teachers;
@@ -117,9 +114,6 @@ create policy "crear mi perfil tutor" on public.teachers
   for insert to authenticated
   with check (profile_id = auth.uid());
 
--- El propio usuario puede editar su perfil tutor.
-drop policy if exists "editar mi perfil tutor" on public.teachers;
-create policy "editar mi perfil tutor" on public.teachers
-  for update to authenticated
-  using (profile_id = auth.uid())
-  with check (profile_id = auth.uid());
+-- NOTA: No damos UPDATE libre sobre teachers todavía. El onboarding tutor
+-- debería usar una RPC o políticas más controladas para evitar que el
+-- usuario se ponga `status = 'active'` manualmente desde el cliente.
