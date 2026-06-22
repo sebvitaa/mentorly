@@ -12,7 +12,12 @@ module.exports = {
       },
     ],
   },
-  testPathIgnorePatterns: ['<rootDir>/node_modules/', '<rootDir>/dist/'],
+  // Los *.int.spec.ts pegan a Supabase real; corren aparte (npm run test:int).
+  testPathIgnorePatterns: [
+    '<rootDir>/node_modules/',
+    '<rootDir>/dist/',
+    '\\.int\\.spec\\.ts$',
+  ],
   moduleFileExtensions: ['ts', 'html', 'js', 'json', 'mjs'],
   // Ionic/Supabase ship ESM; let ts-jest transform them instead of skipping.
   transformIgnorePatterns: ['node_modules/(?!(.*\\.mjs$|@ionic|@stencil|ionicons|@supabase))'],
