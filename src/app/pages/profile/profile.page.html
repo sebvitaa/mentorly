@@ -23,67 +23,161 @@
         </ion-card-content>
       </ion-card>
     } @else {
-      <section class="section-block">
-        <div class="section-heading">
-          <h3>Datos personales</h3>
-        </div>
+      @if (!isEditing) {
+        <section class="section-block">
+          <div class="section-heading">
+            <h3>Datos personales</h3>
+            <ion-button size="small" fill="outline" (click)="startEdit()">
+              Editar
+            </ion-button>
+          </div>
 
-        <ion-card class="data-card">
-          <ion-card-content>
-            <ion-list lines="none">
-              <ion-item>
-                <ion-label>
-                  <strong>Nombre</strong>
-                  <p>{{ profile.fullName }}</p>
-                </ion-label>
-              </ion-item>
-              <ion-item>
-                <ion-label>
-                  <strong>Correo</strong>
-                  <p>{{ profile.email }}</p>
-                </ion-label>
-              </ion-item>
-              <ion-item>
-                <ion-label>
-                  <strong>Año de ingreso</strong>
-                  <p>{{ profile.admissionYear }}</p>
-                </ion-label>
-              </ion-item>
-            </ion-list>
-          </ion-card-content>
-        </ion-card>
-      </section>
+          <ion-card class="data-card">
+            <ion-card-content>
+              <ion-list lines="none">
+                <ion-item>
+                  <ion-label>
+                    <strong>Nombre</strong>
+                    <p>{{ profile.fullName }}</p>
+                  </ion-label>
+                </ion-item>
+                <ion-item>
+                  <ion-label>
+                    <strong>Correo</strong>
+                    <p>{{ profile.email }}</p>
+                  </ion-label>
+                </ion-item>
+                <ion-item>
+                  <ion-label>
+                    <strong>Año de ingreso</strong>
+                    <p>{{ profile.admissionYear }}</p>
+                  </ion-label>
+                </ion-item>
+              </ion-list>
+            </ion-card-content>
+          </ion-card>
+        </section>
 
-      <section class="section-block">
-        <div class="section-heading">
-          <h3>Datos académicos</h3>
-        </div>
+        <section class="section-block">
+          <div class="section-heading">
+            <h3>Datos académicos</h3>
+          </div>
 
-        <ion-card class="data-card">
-          <ion-card-content>
-            <ion-list lines="none">
+          <ion-card class="data-card">
+            <ion-card-content>
+              <ion-list lines="none">
+                <ion-item>
+                  <ion-label>
+                    <strong>Campus</strong>
+                    <p>{{ profile.campusName }}</p>
+                  </ion-label>
+                </ion-item>
+                <ion-item>
+                  <ion-label>
+                    <strong>Facultad</strong>
+                    <p>{{ profile.facultyName }}</p>
+                  </ion-label>
+                </ion-item>
+                <ion-item>
+                  <ion-label>
+                    <strong>Carrera</strong>
+                    <p>{{ profile.careerName }}</p>
+                  </ion-label>
+                </ion-item>
+              </ion-list>
+            </ion-card-content>
+          </ion-card>
+        </section>
+      } @else {
+        <section class="section-block">
+          <div class="section-heading">
+            <h3>Editar mis datos</h3>
+          </div>
+
+          <ion-card class="data-card">
+            <ion-card-content>
               <ion-item>
-                <ion-label>
-                  <strong>Campus</strong>
-                  <p>{{ profile.campusName }}</p>
-                </ion-label>
+                <ion-input
+                  label="Nombre"
+                  labelPlacement="stacked"
+                  [(ngModel)]="editForm.fullName"
+                ></ion-input>
               </ion-item>
               <ion-item>
-                <ion-label>
-                  <strong>Facultad</strong>
-                  <p>{{ profile.facultyName }}</p>
-                </ion-label>
+                <ion-input
+                  type="number"
+                  label="Año de ingreso"
+                  labelPlacement="stacked"
+                  placeholder="Ej: 2023"
+                  [(ngModel)]="editForm.admissionYear"
+                ></ion-input>
               </ion-item>
               <ion-item>
-                <ion-label>
-                  <strong>Carrera</strong>
-                  <p>{{ profile.careerName }}</p>
-                </ion-label>
+                <ion-select
+                  label="Campus"
+                  labelPlacement="stacked"
+                  [(ngModel)]="editForm.campusId"
+                  (ionChange)="onCampusChange()"
+                >
+                  @for (campus of campuses; track campus.id) {
+                    <ion-select-option [value]="campus.id">
+                      {{ campus.name }}
+                    </ion-select-option>
+                  }
+                </ion-select>
               </ion-item>
-            </ion-list>
-          </ion-card-content>
-        </ion-card>
-      </section>
+              <ion-item>
+                <ion-select
+                  label="Facultad"
+                  labelPlacement="stacked"
+                  [disabled]="!editForm.campusId"
+                  [(ngModel)]="editForm.facultyId"
+                  (ionChange)="onFacultyChange()"
+                >
+                  @for (faculty of faculties; track faculty.id) {
+                    <ion-select-option [value]="faculty.id">
+                      {{ faculty.name }}
+                    </ion-select-option>
+                  }
+                </ion-select>
+              </ion-item>
+              <ion-item>
+                <ion-select
+                  label="Carrera"
+                  labelPlacement="stacked"
+                  [disabled]="!editForm.facultyId"
+                  [(ngModel)]="editForm.careerId"
+                >
+                  @for (career of careers; track career.id) {
+                    <ion-select-option [value]="career.id">
+                      {{ career.name }}
+                    </ion-select-option>
+                  }
+                </ion-select>
+              </ion-item>
+
+              <div class="edit-actions">
+                <ion-button
+                  expand="block"
+                  [disabled]="isSaving"
+                  (click)="saveEdit()"
+                >
+                  {{ isSaving ? 'Guardando…' : 'Guardar cambios' }}
+                </ion-button>
+                <ion-button
+                  expand="block"
+                  fill="outline"
+                  color="medium"
+                  [disabled]="isSaving"
+                  (click)="cancelEdit()"
+                >
+                  Cancelar
+                </ion-button>
+              </div>
+            </ion-card-content>
+          </ion-card>
+        </section>
+      }
 
       <section class="section-block">
         <div class="section-heading">

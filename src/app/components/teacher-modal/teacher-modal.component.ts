@@ -9,6 +9,7 @@ import { Teacher } from '../../models/teacher.model';
 import { ScheduleCalendarComponent } from '../schedule-calendar/schedule-calendar.component';
 import { getInitials, formatLongDate } from '../../utils/format.util';
 import { FavoritesService } from '../../services/favorites.service';
+import { TeacherContact, TeacherService } from '../../services/teacher.service';
 
 @Component({
   selector: 'app-teacher-modal',
@@ -20,10 +21,24 @@ import { FavoritesService } from '../../services/favorites.service';
 export class TeacherModalComponent {
   private readonly favoritesService = inject(FavoritesService);
   private readonly toastController = inject(ToastController);
+  private readonly teacherService = inject(TeacherService);
 
-  @Input() teacher: Teacher | null = null;
+  private _teacher: Teacher | null = null;
+
+  @Input()
+  set teacher(value: Teacher | null) {
+    this._teacher = value;
+    this.loadContact(value);
+  }
+  get teacher(): Teacher | null {
+    return this._teacher;
+  }
+
   @Input() isOpen = false;
   @Output() closed = new EventEmitter<void>();
+
+  /** Contacto del tutor, si está permitido verlo (público o reserva confirmada). */
+  contact: TeacherContact | null = null;
 
   readonly getInitials = getInitials;
   readonly formatLongDate = formatLongDate;
@@ -60,5 +75,16 @@ export class TeacherModalComponent {
       position: 'bottom',
     });
     await toast.present();
+  }
+
+  private loadContact(teacher: Teacher | null): void {
+    this.contact = null;
+    if (!teacher) {
+      return;
+    }
+    this.teacherService.getTeacherContact(teacher.id).subscribe({
+      next: (contact) => (this.contact = contact),
+      error: () => (this.contact = null),
+    });
   }
 }

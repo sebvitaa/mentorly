@@ -1,4 +1,3 @@
-import { ContactType } from './teacher.model';
 import { TeacherStatus } from './profile.model';
 
 /** Un bloque de disponibilidad semanal: día (1=Lun..7=Dom, ISO) + hora. */
@@ -9,14 +8,17 @@ export interface WeeklySlot {
 
 /**
  * Datos editables del perfil tutor (lo que el dueño ve y guarda desde su
- * perfil). El contacto viaja completo porque se lee vía RPC SECURITY DEFINER.
+ * perfil). El contacto es dual (correo y/o teléfono, no excluyente) y viaja
+ * completo porque se lee vía RPC SECURITY DEFINER.
  */
 export interface TutorProfileEdit {
   about: string;
   priceMin: number | null;
   priceMax: number | null;
-  contactType: ContactType | null;
-  contactValue: string;
+  contactEmail: string;
+  contactPhone: string;
+  /** Si el contacto se muestra siempre (sin esperar a confirmar una reserva). */
+  showContact: boolean;
   subjectIds: string[];
   slots: WeeklySlot[];
   status: TeacherStatus;

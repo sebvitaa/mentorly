@@ -36,6 +36,15 @@ export class HomePage implements OnInit {
     this.refresh();
   }
 
+  /**
+   * Cada vez que se entra a Home se recarga el catálogo desde Supabase, así un
+   * tutor recién publicado aparece sin tener que recargar toda la app.
+   */
+  ionViewWillEnter(): void {
+    this.teacherService.reload();
+    this.refresh();
+  }
+
   onSearch(query: string): void {
     this.searchQuery = query;
     this.refresh();

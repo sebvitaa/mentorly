@@ -9,18 +9,17 @@ import {
 import { FormsModule } from '@angular/forms';
 import {
   IonButton,
+  IonCheckbox,
   IonInput,
   IonItem,
+  IonModal,
   IonNote,
-  IonSelect,
-  IonSelectOption,
   IonSpinner,
   IonTextarea,
   ToastController,
 } from '@ionic/angular/standalone';
 
 import { Subject } from '../../models/subject.model';
-import { ContactType } from '../../models/teacher.model';
 import { TeacherStatus } from '../../models/profile.model';
 import { WeeklySlot } from '../../models/tutor-profile.model';
 import { SubjectService } from '../../services/subject.service';
@@ -42,11 +41,11 @@ interface Weekday {
   imports: [
     FormsModule,
     IonButton,
+    IonCheckbox,
     IonInput,
     IonItem,
+    IonModal,
     IonNote,
-    IonSelect,
-    IonSelectOption,
     IonSpinner,
     IonTextarea,
   ],
@@ -82,11 +81,21 @@ export class TutorEditorComponent implements OnInit {
   subjects: Subject[] = [];
   selectedSubjectIds: string[] = [];
 
+  // --- Selector de ramos (modal) ---
+  subjectsModalOpen = false;
+  subjectSearch = '';
+  newSubjectName = '';
+  newSubjectDetail = '';
+  isAddingSubject = false;
+
   about = '';
   priceMin: number | null = null;
   priceMax: number | null = null;
-  contactType: ContactType = 'email';
-  contactValue = '';
+
+  // Contacto dual (no excluyente) + visibilidad.
+  contactEmail = '';
+  contactPhone = '';
+  showContact = false;
 
   /** Celdas marcadas, como claves "weekday|hour". */
   private readonly selectedCells = new Set<string>();
@@ -105,16 +114,17 @@ export class TutorEditorComponent implements OnInit {
           this.about = profile.about;
           this.priceMin = profile.priceMin;
           this.priceMax = profile.priceMax;
-          this.contactType = profile.contactType ?? 'email';
-          this.contactValue = profile.contactValue;
+          this.contactEmail = profile.contactEmail;
+          this.contactPhone = profile.contactPhone;
+          this.showContact = profile.showContact;
           this.selectedSubjectIds = profile.subjectIds;
           for (const slot of profile.slots) {
             this.selectedCells.add(this.cellKey(slot.weekday, slot.hour));
           }
         }
-        // Si el contacto es email y no hay valor, sugerir el correo de la cuenta.
-        if (this.contactType === 'email' && !this.contactValue) {
-          this.contactValue = this.accountEmail;
+        // Sugerir el correo de la cuenta si no hay contacto por correo.
+        if (!this.contactEmail) {
+          this.contactEmail = this.accountEmail;
         }
         this.isLoading = false;
       },
@@ -128,6 +138,78 @@ export class TutorEditorComponent implements OnInit {
       },
     });
   }
+
+  // --- Selector de ramos ----------------------------------------------------
+
+  openSubjects(): void {
+    this.subjectsModalOpen = true;
+  }
+
+  closeSubjects(): void {
+    this.subjectsModalOpen = false;
+    this.subjectSearch = '';
+  }
+
+  isSubjectSelected(id: string): boolean {
+    return this.selectedSubjectIds.includes(id);
+  }
+
+  toggleSubject(id: string): void {
+    this.selectedSubjectIds = this.isSubjectSelected(id)
+      ? this.selectedSubjectIds.filter((s) => s !== id)
+      : [...this.selectedSubjectIds, id];
+  }
+
+  /** Ramos filtrados por el buscador (ignora mayúsculas/tildes). */
+  get filteredSubjects(): Subject[] {
+    const needle = this.norm(this.subjectSearch);
+    if (!needle) {
+      return this.subjects;
+    }
+    return this.subjects.filter((s) => this.norm(s.name).includes(needle));
+  }
+
+  /** Resumen de ramos elegidos, para el botón. */
+  get selectedSummary(): string {
+    if (this.selectedSubjectIds.length === 0) {
+      return 'Ningún ramo seleccionado';
+    }
+    const names = this.subjects
+      .filter((s) => this.selectedSubjectIds.includes(s.id))
+      .map((s) => s.name);
+    return names.length ? names.join(', ') : `${this.selectedSubjectIds.length} ramos`;
+  }
+
+  addNewSubject(): void {
+    const name = this.newSubjectName.trim();
+    if (!name || this.isAddingSubject) {
+      return;
+    }
+    this.isAddingSubject = true;
+    this.subjectService.addSubject(name, this.newSubjectDetail.trim()).subscribe({
+      next: async (subject) => {
+        this.isAddingSubject = false;
+        if (!this.subjects.some((s) => s.id === subject.id)) {
+          this.subjects = [...this.subjects, subject].sort((a, b) =>
+            a.name.localeCompare(b.name)
+          );
+        }
+        if (!this.isSubjectSelected(subject.id)) {
+          this.selectedSubjectIds = [...this.selectedSubjectIds, subject.id];
+        }
+        this.newSubjectName = '';
+        this.newSubjectDetail = '';
+        await this.presentToast(`Ramo "${subject.name}" agregado.`, 'primary');
+      },
+      error: async (err) => {
+        this.isAddingSubject = false;
+        console.error('[tutor-editor] add_subject falló', err);
+        await this.presentToast('No se pudo agregar el ramo.', 'danger');
+      },
+    });
+  }
+
+  // --- Disponibilidad -------------------------------------------------------
 
   cellKey(weekday: number, hour: string): string {
     return `${weekday}|${hour}`;
@@ -146,12 +228,7 @@ export class TutorEditorComponent implements OnInit {
     }
   }
 
-  /** Cuando cambian a email sin valor, autocompletar con el correo de cuenta. */
-  onContactTypeChange(): void {
-    if (this.contactType === 'email' && !this.contactValue) {
-      this.contactValue = this.accountEmail;
-    }
-  }
+  // --- Guardar --------------------------------------------------------------
 
   async save(): Promise<void> {
     if (this.isSaving) {
@@ -169,8 +246,9 @@ export class TutorEditorComponent implements OnInit {
         about: this.about.trim(),
         priceMin: this.priceMin,
         priceMax: this.priceMax,
-        contactType: this.contactType,
-        contactValue: this.contactValue.trim(),
+        contactEmail: this.contactEmail.trim(),
+        contactPhone: this.contactPhone.trim(),
+        showContact: this.showContact,
         subjectIds: this.selectedSubjectIds,
         slots,
         status: 'incomplete',
@@ -193,7 +271,6 @@ export class TutorEditorComponent implements OnInit {
         },
         error: async (err) => {
           this.isSaving = false;
-          // Mostrar el error real ayuda a depurar (p. ej. RPC inexistente).
           console.error('[tutor-editor] save_tutor_profile falló', err);
           const detail = err?.message ? ` (${err.message})` : '';
           await this.presentToast(
@@ -213,13 +290,21 @@ export class TutorEditorComponent implements OnInit {
     if (this.selectedSubjectIds.length === 0) {
       missing.push('al menos un ramo');
     }
-    if (!this.contactValue.trim()) {
-      missing.push('contacto');
+    if (!this.contactEmail.trim() && !this.contactPhone.trim()) {
+      missing.push('un contacto (correo o teléfono)');
     }
     if (slots.length === 0) {
       missing.push('disponibilidad');
     }
     return missing.join(', ');
+  }
+
+  private norm(value: string): string {
+    return value
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .toLowerCase()
+      .trim();
   }
 
   private async presentToast(

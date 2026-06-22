@@ -33,51 +33,46 @@
     <!-- Ramos -->
     <div class="field-group">
       <h4>Ramos que enseñas</h4>
-      <ion-item>
-        <ion-select
-          label="Ramos"
-          labelPlacement="stacked"
-          [multiple]="true"
-          placeholder="Selecciona uno o más ramos"
-          [(ngModel)]="selectedSubjectIds"
-        >
-          @for (subject of subjects; track subject.id) {
-            <ion-select-option [value]="subject.id">
-              {{ subject.name }}
-            </ion-select-option>
-          }
-        </ion-select>
-      </ion-item>
+      <button type="button" class="subjects-trigger" (click)="openSubjects()">
+        <span class="subjects-summary">{{ selectedSummary }}</span>
+        <span class="subjects-action">Seleccionar ramos</span>
+      </button>
       <ion-note class="hint">Sin ramos no aparecerás en el catálogo.</ion-note>
     </div>
 
     <!-- Contacto -->
     <div class="field-group">
-      <h4>Contacto preferido</h4>
+      <h4>Contacto</h4>
       <ion-note class="hint">
-        Se comparte con el estudiante solo cuando confirmas una reserva.
+        Puedes dejar correo y/o teléfono (no es excluyente). Necesitas al menos uno.
       </ion-note>
-      <div class="contact-row">
-        <ion-item>
-          <ion-select
-            label="Tipo"
-            labelPlacement="stacked"
-            [(ngModel)]="contactType"
-            (ionChange)="onContactTypeChange()"
-          >
-            <ion-select-option value="email">Correo</ion-select-option>
-            <ion-select-option value="phone">Teléfono</ion-select-option>
-          </ion-select>
-        </ion-item>
-        <ion-item>
-          <ion-input
-            label="Valor"
-            labelPlacement="stacked"
-            [placeholder]="contactType === 'email' ? 'tucorreo@udd.cl' : '+56 9 1234 5678'"
-            [(ngModel)]="contactValue"
-          ></ion-input>
-        </ion-item>
-      </div>
+      <ion-item>
+        <ion-input
+          type="email"
+          label="Correo"
+          labelPlacement="stacked"
+          placeholder="tucorreo@udd.cl"
+          [(ngModel)]="contactEmail"
+        ></ion-input>
+      </ion-item>
+      <ion-item>
+        <ion-input
+          type="tel"
+          label="Teléfono"
+          labelPlacement="stacked"
+          placeholder="+56 9 1234 5678"
+          [(ngModel)]="contactPhone"
+        ></ion-input>
+      </ion-item>
+      <ion-item lines="none" class="show-contact">
+        <ion-checkbox
+          labelPlacement="end"
+          justify="start"
+          [(ngModel)]="showContact"
+        >
+          Mostrar mi contacto siempre (sin esperar a confirmar una reserva)
+        </ion-checkbox>
+      </ion-item>
     </div>
 
     <!-- Descripción -->
@@ -138,4 +133,74 @@
       {{ isSaving ? 'Guardando…' : 'Guardar y publicar' }}
     </ion-button>
   </div>
+
+  <!-- Modal selector de ramos -->
+  <ion-modal [isOpen]="subjectsModalOpen" (didDismiss)="closeSubjects()">
+    <ng-template>
+      <div class="subjects-modal">
+        <div class="subjects-modal-header">
+          <h3>Selecciona los ramos que dictas</h3>
+          <button type="button" class="close-button" (click)="closeSubjects()">
+            ×
+          </button>
+        </div>
+
+        <ion-item>
+          <ion-input
+            label="Buscar ramo"
+            labelPlacement="stacked"
+            placeholder="Cálculo, Programación…"
+            [(ngModel)]="subjectSearch"
+          ></ion-input>
+        </ion-item>
+
+        <div class="subjects-list">
+          @for (subject of filteredSubjects; track subject.id) {
+            <ion-item lines="full">
+              <ion-checkbox
+                labelPlacement="end"
+                justify="start"
+                [checked]="isSubjectSelected(subject.id)"
+                (ionChange)="toggleSubject(subject.id)"
+              >
+                {{ subject.name }}
+              </ion-checkbox>
+            </ion-item>
+          } @empty {
+            <ion-note class="hint">Sin resultados. Agrégalo abajo.</ion-note>
+          }
+        </div>
+
+        <div class="add-subject">
+          <h4>¿No está tu ramo? Agrégalo</h4>
+          <ion-item>
+            <ion-input
+              label="Nombre del ramo"
+              labelPlacement="stacked"
+              placeholder="Ej: Termodinámica"
+              [(ngModel)]="newSubjectName"
+            ></ion-input>
+          </ion-item>
+          <ion-item>
+            <ion-input
+              label="Detalle / carrera (opcional)"
+              labelPlacement="stacked"
+              placeholder="Ej: Ingeniería Civil Mecánica, 2º año"
+              [(ngModel)]="newSubjectDetail"
+            ></ion-input>
+          </ion-item>
+          <ion-button
+            expand="block"
+            fill="outline"
+            [disabled]="isAddingSubject || !newSubjectName.trim()"
+            (click)="addNewSubject()"
+          >
+            {{ isAddingSubject ? 'Agregando…' : 'Agregar ramo' }}
+          </ion-button>
+        </div>
+
+        <ion-button expand="block" (click)="closeSubjects()">Listo</ion-button>
+      </div>
+    </ng-template>
+  </ion-modal>
 }

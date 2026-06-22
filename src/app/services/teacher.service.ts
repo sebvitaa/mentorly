@@ -17,10 +17,28 @@ export interface TeacherFilters {
   subject?: string | null;
 }
 
+/** Contacto del tutor expuesto cuando está permitido (público o reserva confirmada). */
+export interface TeacherContact {
+  email: string | null;
+  phone: string | null;
+}
+
+/** Normaliza para comparar ignorando tildes/mayúsculas ("Cálculo" ≈ "calculo"). */
+function normalize(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 /**
  * Consulta anidada: tutor + perfil + ramos + disponibilidad + reseñas.
- * El contacto (contact_type/contact_value) NO se incluye: el catálogo público
- * no debe exponerlo (se oculta hasta que el tutor confirme una reserva).
+ * El contacto (contact_email/contact_phone) NO se incluye: se obtiene aparte
+ * vía `getTeacherContact` (RPC), que respeta show_contact / reserva confirmada.
  * Solo se listan tutores `active`; los `incomplete`/`pending` no son visibles.
  */
 const TEACHER_SELECT = `
@@ -36,17 +54,25 @@ export class TeacherService {
   private readonly supabase = inject(SupabaseService).client;
 
   /**
-   * Fuente de verdad. Consulta Supabase una vez y cachea el resultado.
-   * Si la consulta falla, se sirven los datos mock para que la app siga
-   * funcionando.
+   * Fuente de verdad cacheada. Se recrea con `reload()` para reflejar tutores
+   * recién publicados al volver a Home.
    */
-  private readonly teachers$ = from(this.fetchTeachers()).pipe(
-    catchError(() => {
-      console.warn('[TeacherService] Supabase no disponible — usando mocks.');
-      return of(MOCK_TEACHERS);
-    }),
-    shareReplay({ bufferSize: 1, refCount: false })
-  );
+  private teachers$ = this.createStream();
+
+  private createStream(): Observable<Teacher[]> {
+    return from(this.fetchTeachers()).pipe(
+      catchError(() => {
+        console.warn('[TeacherService] Supabase no disponible — usando mocks.');
+        return of(MOCK_TEACHERS);
+      }),
+      shareReplay({ bufferSize: 1, refCount: false })
+    );
+  }
+
+  /** Vuelve a consultar Supabase la próxima vez que alguien se suscriba. */
+  reload(): void {
+    this.teachers$ = this.createStream();
+  }
 
   private async fetchTeachers(): Promise<Teacher[]> {
     const { data, error } = await this.supabase
@@ -63,8 +89,7 @@ export class TeacherService {
       return MOCK_TEACHERS;
     }
 
-    // Un tutor sin ramos no se muestra en el catálogo (TODO: "no subjects →
-    // not shown"). El RPC de publicación ya lo evita; esto es defensa extra.
+    // Un tutor sin ramos no se muestra en el catálogo.
     return data
       .map((row) => this.mapTeacher(row))
       .filter((teacher) => teacher.subjects.length > 0);
@@ -75,11 +100,39 @@ export class TeacherService {
     return this.teachers$;
   }
 
-  /** Tutores filtrados por texto libre y/o un ramo activo. */
+  /** Tutores filtrados por texto libre y/o un ramo activo (ignora tildes). */
   searchTeachers({ query, subject }: TeacherFilters): Observable<Teacher[]> {
     return this.teachers$.pipe(
       map((teachers) => this.applyFilters(teachers, query, subject))
     );
+  }
+
+  /**
+   * Contacto del tutor, si está permitido verlo (tutor público o reserva
+   * confirmada). Devuelve `null` cuando no corresponde mostrarlo.
+   */
+  getTeacherContact(teacherId: string): Observable<TeacherContact | null> {
+    if (!UUID_RE.test(teacherId)) {
+      // IDs mock (no-UUID) no tienen contacto real en la BD.
+      return of(null);
+    }
+    return from(this.fetchTeacherContact(teacherId));
+  }
+
+  private async fetchTeacherContact(
+    teacherId: string
+  ): Promise<TeacherContact | null> {
+    const { data, error } = await this.supabase.rpc('get_teacher_contact', {
+      p_teacher: teacherId,
+    });
+    if (error || !data) {
+      return null;
+    }
+    const row = data as { email: string | null; phone: string | null };
+    if (!row.email && !row.phone) {
+      return null;
+    }
+    return { email: row.email ?? null, phone: row.phone ?? null };
   }
 
   // --- Mapeo de filas de Supabase al modelo del frontend ---------------------
@@ -100,7 +153,7 @@ export class TeacherService {
         .filter((name: string | undefined): name is string => !!name),
       avatar: profile.avatar_url ?? undefined,
       about: row.about ?? '',
-      // contact se omite a propósito (oculto hasta confirmar reserva).
+      // contact se obtiene aparte vía getTeacherContact.
       availability: this.mapAvailability(row.availability_slots ?? []),
       reviews: this.mapReviews(row.reviews ?? []),
     };
@@ -141,19 +194,19 @@ export class TeacherService {
     let results = teachers;
 
     if (subject) {
-      const needle = subject.toLowerCase();
+      const needle = normalize(subject);
       results = results.filter((teacher) =>
-        teacher.subjects.some((s) => s.toLowerCase().includes(needle))
+        teacher.subjects.some((s) => normalize(s).includes(needle))
       );
     }
 
-    const trimmed = query?.trim().toLowerCase();
+    const trimmed = query ? normalize(query) : '';
     if (trimmed) {
       results = results.filter(
         (teacher) =>
-          teacher.name.toLowerCase().includes(trimmed) ||
-          teacher.career.toLowerCase().includes(trimmed) ||
-          teacher.subjects.some((s) => s.toLowerCase().includes(trimmed))
+          normalize(teacher.name).includes(trimmed) ||
+          normalize(teacher.career).includes(trimmed) ||
+          teacher.subjects.some((s) => normalize(s).includes(trimmed))
       );
     }
 

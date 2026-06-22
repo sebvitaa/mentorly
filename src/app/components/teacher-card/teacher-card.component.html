@@ -17,9 +17,13 @@
   <p class="price-range">{{ teacher.priceRange }}</p>
 
   <div class="rating">
-    <span class="star">★</span>
-    <span class="rating-number">{{ teacher.rating.toFixed(1) }}</span>
-    <span class="review-count">({{ teacher.reviewCount }} reseñas)</span>
+    @if (teacher.reviewCount > 0) {
+      <span class="star">★</span>
+      <span class="rating-number">{{ teacher.rating.toFixed(1) }}</span>
+      <span class="review-count">({{ teacher.reviewCount }} reseñas)</span>
+    } @else {
+      <span class="review-count">Sin reseñas</span>
+    }
   </div>
 
   <div class="subjects">

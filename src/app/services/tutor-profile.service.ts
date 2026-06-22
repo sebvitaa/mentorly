@@ -41,8 +41,9 @@ export class TutorProfileService {
       about: row['about'] ?? '',
       priceMin: row['price_min'] ?? null,
       priceMax: row['price_max'] ?? null,
-      contactType: row['contact_type'] ?? null,
-      contactValue: row['contact_value'] ?? '',
+      contactEmail: row['contact_email'] ?? '',
+      contactPhone: row['contact_phone'] ?? '',
+      showContact: row['show_contact'] ?? false,
       subjectIds: row['subject_ids'] ?? [],
       slots: (row['weekly_availability'] ?? []).map((slot: any) => ({
         weekday: slot.weekday,
@@ -57,8 +58,9 @@ export class TutorProfileService {
       p_about: edit.about,
       p_price_min: edit.priceMin,
       p_price_max: edit.priceMax,
-      p_contact_type: edit.contactType,
-      p_contact_value: edit.contactValue,
+      p_contact_email: edit.contactEmail,
+      p_contact_phone: edit.contactPhone,
+      p_show_contact: edit.showContact,
       p_subject_ids: edit.subjectIds,
       p_weekly: edit.slots,
     });

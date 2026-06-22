@@ -4,6 +4,17 @@ import { Observable, from } from 'rxjs';
 import { SupabaseService } from './supabase.service';
 import { ProfileView, TeacherStatus } from '../models/profile.model';
 
+/** Datos editables del perfil de la persona. */
+export interface ProfileUpdate {
+  fullName: string;
+  admissionYear: string;
+  campusId: string;
+  facultyId: string;
+  careerId: string;
+  /** Nombre legible de la carrera (se guarda junto al ID de referencia). */
+  careerName: string;
+}
+
 /**
  * Perfil de la persona autenticada.
  *
@@ -17,6 +28,38 @@ export class ProfileService {
 
   getMyProfile(): Observable<ProfileView | null> {
     return from(this.fetchMyProfile());
+  }
+
+  /** Actualiza los datos personales/académicos del perfil propio. */
+  updateMyProfile(update: ProfileUpdate): Observable<void> {
+    return from(this.persistMyProfile(update));
+  }
+
+  private async persistMyProfile(update: ProfileUpdate): Promise<void> {
+    const {
+      data: { user },
+    } = await this.supabase.auth.getUser();
+
+    if (!user) {
+      throw new Error('No autenticado');
+    }
+
+    const { error } = await this.supabase
+      .from('profiles')
+      .update({
+        full_name: update.fullName,
+        admission_year: update.admissionYear,
+        campus_id: update.campusId,
+        faculty_id: update.facultyId,
+        career_id: update.careerId,
+        career: update.careerName,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', user.id);
+
+    if (error) {
+      throw error;
+    }
   }
 
   private async fetchMyProfile(): Promise<ProfileView | null> {

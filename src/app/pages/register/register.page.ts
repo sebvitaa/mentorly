@@ -46,6 +46,9 @@ export class RegisterPage implements OnInit {
   formSubmitted = false;
   isRegistering = false;
 
+  /** Año actual; el año de ingreso válido va de 1920 hasta este. */
+  readonly currentYear = new Date().getFullYear();
+
   campuses: CampusDto[] = [];
   faculties: FacultyDto[] = [];
   careers: CareerDto[] = [];
@@ -104,6 +107,15 @@ export class RegisterPage implements OnInit {
 
     if (this.form.password !== this.form.confirmPassword) {
       await this.presentToast('Las contraseñas no coinciden.', 'danger');
+      return;
+    }
+
+    // Validación de año de ingreso: oculta en el formulario; solo alerta aquí.
+    if (!this.isAdmissionYearValid()) {
+      await this.presentToast(
+        `El año de ingreso debe estar entre 1920 y ${this.currentYear}.`,
+        'danger'
+      );
       return;
     }
 
@@ -209,6 +221,12 @@ export class RegisterPage implements OnInit {
 
   private isUddEmail(email: string): boolean {
     return /^[^\s@]+@udd\.cl$/i.test(email);
+  }
+
+  /** Año de ingreso entre 1920 y el año actual (entero). */
+  private isAdmissionYearValid(): boolean {
+    const year = Number(this.form.admissionYear.trim());
+    return Number.isInteger(year) && year >= 1920 && year <= this.currentYear;
   }
 
   private createEmptyForm(): RegisterForm {
